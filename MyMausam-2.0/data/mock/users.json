@@ -1,0 +1,4 @@
+[
+  {"id": "usr-1", "name": "Anubhav Prakash", "role": "citizen", "persona": "health", "default_location": "Ghaziabad"},
+  {"id": "usr-2", "name": "Ramesh Kumar", "role": "farmer", "persona": "farmer", "default_location": "Meerut"}
+]

@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SolarEstimate",
+  "type": "object",
+  "properties": {
+    "location": {"type": "string"},
+    "daily_generation_kwh": {"type": "number"},
+    "monthly_savings_inr": {"type": "number"},
+    "co2_offset_kg_year": {"type": "number"}
+  },
+  "required": ["location", "daily_generation_kwh", "monthly_savings_inr"]
+}

@@ -1,0 +1,9 @@
+{
+  "location": "Ghaziabad",
+  "temperature": 28.5,
+  "feels_like": 30.0,
+  "condition": "Partly Cloudy",
+  "humidity": 68,
+  "wind_speed": 12.5,
+  "aqi": {"aqi": 142, "status": "Moderate", "color": "#FFBE00"}
+}

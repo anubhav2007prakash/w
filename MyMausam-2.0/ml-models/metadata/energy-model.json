@@ -1,0 +1,8 @@
+{
+  "model_name": "GridDemandPredictor-RF",
+  "version": "1.2.0",
+  "architecture": "RandomForestRegressor",
+  "input_features": ["temperature", "humidity", "hour_of_day", "is_weekend"],
+  "target": "demand_mw",
+  "metrics": {"r2_score": 0.942, "mae": 42.5}
+}

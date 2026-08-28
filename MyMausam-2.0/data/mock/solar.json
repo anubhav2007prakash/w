@@ -1,0 +1,7 @@
+{
+  "location": "Delhi NCR",
+  "daily_generation_kwh": 10.6,
+  "monthly_savings_inr": 2385.0,
+  "co2_offset_kg_year": 3172.5,
+  "sunlight_hours": 8.5
+}

@@ -1,0 +1,7 @@
+{
+  "grid_demand_mw": 4820.5,
+  "solar_generation_mw": 1450.2,
+  "renewable_percentage": 30.1,
+  "carbon_intensity_gco2_kwh": 412.0,
+  "optimal_consumption_window": "11:30 AM – 03:00 PM"
+}

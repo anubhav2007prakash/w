@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "EnergyOptimization",
+  "type": "object",
+  "properties": {
+    "grid_demand_mw": {"type": "number"},
+    "solar_generation_mw": {"type": "number"},
+    "renewable_percentage": {"type": "number"},
+    "carbon_intensity_gco2_kwh": {"type": "number"}
+  },
+  "required": ["grid_demand_mw", "solar_generation_mw", "renewable_percentage"]
+}

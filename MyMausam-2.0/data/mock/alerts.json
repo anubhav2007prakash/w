@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "location_name": "Ghaziabad & Delhi NCR",
+    "alert_type": "Thunderstorm with Squall",
+    "severity": "yellow",
+    "description": "Scattered thunderstorms accompanied by lightning and surface gusty winds (35-45 kmph) likely.",
+    "date_of_issue": "2026-08-28 08:30",
+    "valid_upto": "2026-08-29 08:30",
+    "status_text": "Active Warning",
+    "color": "#FFBE00",
+    "is_active": true
+  },
+  {
+    "id": 2,
+    "location_name": "Coastal Andhra & Odisha",
+    "alert_type": "Severe Cyclone Watch",
+    "severity": "orange",
+    "description": "Deep depression advancing North-Westwards. Fishermen advised not to venture into deep sea.",
+    "date_of_issue": "2026-08-28 06:00",
+    "valid_upto": "2026-08-30 18:00",
+    "status_text": "Active Warning",
+    "color": "#FF7400",
+    "is_active": true
+  }
+]

@@ -1,0 +1,7 @@
+{
+  "model_name": "MissionLiFE-PersonaRanker",
+  "version": "2.0.0",
+  "architecture": "RuleWeightingEngine + GradientBoostingClassifier",
+  "personas": ["health", "runner", "farmer", "commuter", "traveler", "parent", "beach", "event_planner"],
+  "metrics": {"ndcg_at_5": 0.91}
+}

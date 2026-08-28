@@ -1,0 +1,4 @@
+[
+  {"id": "r1", "persona": "health", "title": "UV Sunglasses", "description": "UVI > 7.0 requires eye and skin protection.", "impact_score": 90},
+  {"id": "r2", "persona": "farmer", "title": "Drain Waterlogged Furrows", "description": "Anticipated convective showers in next 24h.", "impact_score": 95}
+]

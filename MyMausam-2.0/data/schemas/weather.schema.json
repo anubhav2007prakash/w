@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CurrentWeather",
+  "type": "object",
+  "properties": {
+    "location": {"type": "string"},
+    "temperature": {"type": "number"},
+    "condition": {"type": "string"},
+    "humidity": {"type": "integer"}
+  },
+  "required": ["location", "temperature", "condition", "humidity"]
+}

@@ -1,0 +1,24 @@
+{
+  "name": "my-mausam-2.0",
+  "version": "2.0.0",
+  "private": true,
+  "description": "MyMausam 2.0 - Hyper-local Weather Telemetry, Alerts & Multilingual Insights",
+  "scripts": {
+    "dev:web": "npm --prefix apps/web run dev",
+    "build:web": "npm --prefix apps/web run build",
+    "start:web": "npm --prefix apps/web run start",
+    "dev:backend": "cd backend/python && python -m uvicorn app.main:app --reload --port 8000",
+    "start:backend": "cd backend/python && python -m uvicorn app.main:app --port 8000"
+  },
+  "keywords": [
+    "weather",
+    "imd",
+    "nowcasting",
+    "agromet",
+    "aviation",
+    "nextjs",
+    "fastapi"
+  ],
+  "author": "AeroCoders",
+  "license": "MIT"
+}

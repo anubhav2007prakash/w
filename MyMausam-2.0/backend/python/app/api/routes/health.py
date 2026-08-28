@@ -1,0 +1,7 @@
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/health", tags=["health"])
+
+@router.get("")
+def health():
+    return {"status": "healthy", "service": "MyMausam 2.0 API"}

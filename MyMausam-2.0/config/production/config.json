@@ -1,0 +1,5 @@
+{
+  "environment": "production",
+  "apiUrl": "https://api.mymausam.org/api",
+  "debug": false
+}

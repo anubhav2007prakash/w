@@ -1,0 +1,12 @@
+[
+  {
+    "query": "Is it going to rain in Ghaziabad today?",
+    "response": "In Ghaziabad, current sky is partly cloudy with 28.5°C. Low chance of rain in the morning, but light convective showers may occur in late afternoon.",
+    "persona": "citizen"
+  },
+  {
+    "query": "Can I spray pesticide on my wheat crop today?",
+    "response": "Agromet advisory suggests completing spraying between 6:00 AM and 8:30 AM before afternoon gusty winds begin.",
+    "persona": "farmer"
+  }
+]

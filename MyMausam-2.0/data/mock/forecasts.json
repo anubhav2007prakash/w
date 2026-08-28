@@ -1,0 +1,7 @@
+[
+  {"day": "Today", "condition": "Sunny Intervals", "icon": "sun", "min_temp": 23.0, "max_temp": 32.5, "rain_probability": 10},
+  {"day": "Tomorrow", "condition": "Passing Showers", "icon": "cloud-rain", "min_temp": 22.5, "max_temp": 30.0, "rain_probability": 55},
+  {"day": "Day 3", "condition": "Thunderstorm Watch", "icon": "cloud-lightning", "min_temp": 21.0, "max_temp": 28.5, "rain_probability": 70},
+  {"day": "Day 4", "condition": "Partly Cloudy", "icon": "cloud-sun", "min_temp": 22.0, "max_temp": 31.0, "rain_probability": 25},
+  {"day": "Day 5", "condition": "Clear & Breezy", "icon": "sun", "min_temp": 23.5, "max_temp": 33.0, "rain_probability": 5}
+]

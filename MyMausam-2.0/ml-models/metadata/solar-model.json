@@ -1,0 +1,8 @@
+{
+  "model_name": "SolarIrradiance-XGB",
+  "version": "2.1.0",
+  "architecture": "XGBoostRegressor",
+  "input_features": ["solar_zenith_angle", "cloud_cover_percent", "humidity", "dew_point"],
+  "target": "global_horizontal_irradiance_w_m2",
+  "metrics": {"r2_score": 0.968, "nrmse": 0.054}
+}

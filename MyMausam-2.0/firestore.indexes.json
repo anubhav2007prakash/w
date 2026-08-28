@@ -1,0 +1,21 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "alerts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "location_name", "order": "ASCENDING" },
+        { "fieldPath": "date_of_issue", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "crowd_reports",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "location_name", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

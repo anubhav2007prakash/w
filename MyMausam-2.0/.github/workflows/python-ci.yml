@@ -1,0 +1,31 @@
+name: Python Backend CI
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - "backend/python/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        working-directory: backend/python
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Lint with Ruff
+        working-directory: backend/python
+        run: ruff check .
+      - name: Security scan (Bandit)
+        working-directory: backend/python
+        run: bandit -r app/ -ll
+      - name: Type check (mypy)
+        working-directory: backend/python
+        run: mypy app/
+      - name: Run tests
+        working-directory: backend/python
+        run: pytest --cov=app --cov-report=term-missing --cov-fail-under=80

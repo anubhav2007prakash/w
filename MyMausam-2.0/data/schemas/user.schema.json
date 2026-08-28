@@ -1,0 +1,12 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "UserProfile",
+  "type": "object",
+  "properties": {
+    "id": {"type": "string"},
+    "name": {"type": "string"},
+    "role": {"type": "string"},
+    "persona": {"type": "string"}
+  },
+  "required": ["id", "name", "role", "persona"]
+}
