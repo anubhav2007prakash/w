@@ -16,6 +16,10 @@
     "react": "19.2.8",
     "react-dom": "19.2.8"
   },
+  "allowScripts": {
+    "@firebase/util": true,
+    "protobufjs": true
+  },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/leaflet": "^1.9.16",
