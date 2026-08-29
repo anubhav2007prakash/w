@@ -275,27 +275,27 @@ export const SideDrawer: React.FC = () => {
         {
           icon: <Zap className="w-5 h-5 text-[#FFBE00]" />,
           label: "Weather × Energy Correlation",
-          path: "/energy-impact",
+          path: "/energy/weather-correlation",
         },
         {
           icon: <Droplets className="w-5 h-5 text-[#38bdf8]" />,
           label: "Flood Impact on Energy Grid",
-          path: "/energy-impact",
+          path: "/energy/flood-impact",
         },
         {
           icon: <Leaf className="w-5 h-5 text-[#22c55e]" />,
           label: "Daily Carbon Footprint",
-          path: "/carbon-tracker",
+          path: "/energy/carbon-footprint",
         },
         {
           icon: <Activity className="w-5 h-5 text-[#a78bfa]" />,
           label: "Carbon Dashboard & Leaderboard",
-          path: "/carbon-tracker",
+          path: "/energy/carbon-dashboard",
         },
         {
           icon: <Sun className="w-5 h-5 text-[#FFBE00]" />,
           label: "Climate-Energy Trends",
-          path: "/energy-impact",
+          path: "/energy/climate-trends",
         },
       ],
     },

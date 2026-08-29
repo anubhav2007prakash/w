@@ -113,9 +113,9 @@ function getCategories(t: (k: string) => string): FeatureCategory[] {
       emoji: "⚡",
       accentColor: "#FFBE00",
       features: [
-        { title: t("features.energy_weather"), subtitle: t("features.energy_weather_sub"), icon: Zap, href: "/energy-impact", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
-        { title: t("features.carbon_tracker"), subtitle: t("features.carbon_tracker_sub"), icon: Leaf, href: "/carbon-tracker", color: "#22c55e", bgColor: "rgba(34,197,94,0.15)" },
-        { title: t("features.flood_energy"), subtitle: t("features.flood_energy_sub"), icon: Activity, href: "/energy-impact#flood", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
+        { title: t("features.energy_weather"), subtitle: t("features.energy_weather_sub"), icon: Zap, href: "/energy/weather-correlation", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
+        { title: t("features.carbon_tracker"), subtitle: t("features.carbon_tracker_sub"), icon: Leaf, href: "/energy/carbon-footprint", color: "#22c55e", bgColor: "rgba(34,197,94,0.15)" },
+        { title: t("features.flood_energy"), subtitle: t("features.flood_energy_sub"), icon: Activity, href: "/energy/flood-impact", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
       ],
     },
   ];
