@@ -434,6 +434,11 @@ export const AuthModal: React.FC = () => {
         {/* TAB 3: PHONE OTP */}
         {tab === "otp" && (
           <div className="space-y-3">
+            {/* Demo OTP hint */}
+            <div className="bg-[#FFBE00]/15 border border-[#FFBE00]/30 p-2.5 rounded-2xl flex items-center gap-2 text-xs text-[#FFBE00]">
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span>Demo mode: Enter any number, use OTP <strong>123456</strong> to sign in.</span>
+            </div>
             <div>
               <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.mobile_number")}</label>
               <div className="flex">
