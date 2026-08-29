@@ -90,7 +90,7 @@ export const WeatherAPI = {
       body: JSON.stringify(data),
     }),
 
-  getRadarData: () => fetchJson<RadarData>(`${API_BASE}/radar`),
+  getRadarData: (station?: string) => fetchJson<RadarData>(`${API_BASE}/radar${station ? `?station=${encodeURIComponent(station)}` : ""}`),
 
   getRainTimeline: () => fetchJson<RainTimelineData>(`${API_BASE}/rain-alert/timeline`),
 

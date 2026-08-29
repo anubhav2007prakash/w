@@ -215,8 +215,112 @@ def submit_crowd_report(report: CrowdReportCreate):
 
 # 6. Specialized Weather Modules
 @api_router.get("/radar")
-def get_radar():
-    return weather_service.get_radar_data()
+def get_radar(station: Optional[str] = Query(None)):
+    """Radar data for a station, using weatherstack when available."""
+    import asyncio, random
+    from datetime import datetime
+
+    # Station database
+    STATIONS = {
+        "Delhi": {"lat": 28.5665, "lon": 77.1031, "name": "Delhi (Palam DWR)", "state": "Delhi NCR"},
+        "Mumbai": {"lat": 18.90, "lon": 72.81, "name": "Mumbai (Colaba)", "state": "Maharashtra"},
+        "Kolkata": {"lat": 22.65, "lon": 88.45, "name": "Kolkata DWR", "state": "West Bengal"},
+        "Chennai": {"lat": 13.08, "lon": 80.29, "name": "Chennai DWR", "state": "Tamil Nadu"},
+        "Jaipur": {"lat": 26.82, "lon": 75.80, "name": "Jaipur DWR", "state": "Rajasthan"},
+        "Cherrapunji": {"lat": 25.29, "lon": 91.73, "name": "Cherrapunji DWR", "state": "Meghalaya"},
+    }
+
+    # Default to Delhi if no station specified
+    stn_key = station or "Delhi"
+    stn = STATIONS.get(stn_key, STATIONS["Delhi"])
+
+    # Try to get real weather from weatherstack
+    reflectivity_points = []
+    try:
+        ws_data = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(stn_key)
+        )
+        current = ws_data.get("current", {})
+        weather_code = current.get("weather_code", 113)
+        temp = current.get("temperature", 30)
+        humidity = current.get("humidity", 50)
+
+        # Generate reflectivity based on real conditions
+        # IMD weather codes: 2xx = partly cloudy, 3xx = overcast, 5xx = rain, 6xx = rain, 7xx = snow, 80/95 = thunderstorm
+        is_rainy = 500 <= weather_code < 700
+        is_stormy = weather_code in (200, 386, 389, 392, 395)
+        is_cloudy = weather_code in (119, 122, 248, 260)
+
+        num_points = 0
+        max_intensity = 0
+        level_label = "Clear"
+
+        if is_stormy:
+            num_points = random.randint(4, 8)
+            max_intensity = random.randint(50, 65)
+            level_label = "Severe / Thunderstorm"
+        elif is_rainy:
+            num_points = random.randint(3, 6)
+            max_intensity = random.randint(30, 50)
+            level_label = "Rain"
+        elif is_cloudy:
+            num_points = random.randint(1, 3)
+            max_intensity = random.randint(15, 30)
+            level_label = "Cloudy / Light Drizzle"
+        else:
+            num_points = random.randint(0, 2)
+            max_intensity = random.randint(5, 15)
+            level_label = "Clear"
+
+        for i in range(num_points):
+            offset_lat = stn["lat"] + random.uniform(-1.5, 1.5)
+            offset_lon = stn["lon"] + random.uniform(-1.5, 1.5)
+            intensity = max(5, max_intensity + random.randint(-15, 10))
+            if intensity > 55:
+                lv = "Severe Cell"
+            elif intensity > 40:
+                lv = "Heavy Rain"
+            elif intensity > 25:
+                lv = "Moderate Rain"
+            elif intensity > 15:
+                lv = "Light Drizzle"
+            else:
+                lv = "Clear / Isolated"
+            reflectivity_points.append({
+                "lat": round(offset_lat, 3),
+                "lon": round(offset_lon, 3),
+                "intensity": intensity,
+                "level": lv,
+            })
+
+        # Warnings based on real data
+        warnings = []
+        if is_stormy:
+            warnings.append(f"Active thunderstorm near {stn['name']} — stay indoors")
+        if is_rainy and humidity > 70:
+            warnings.append("High humidity with rainfall — possible localized waterlogging")
+        if temp > 40:
+            warnings.append(f"Extreme heat ({temp}°C) — heat advisory in effect")
+        if not warnings:
+            warnings.append("No active severe weather warnings for this station")
+
+    except Exception:
+        # Fallback if weatherstack fails
+        reflectivity_points = [
+            {"lat": stn["lat"] + 0.14, "lon": stn["lon"] + 0.0, "intensity": 35, "level": "Moderate Rain"},
+            {"lat": stn["lat"] - 0.08, "lon": stn["lon"] + 0.2, "intensity": 45, "level": "Heavy Rain"},
+        ]
+        warnings = ["Radar data from fallback — weatherstack unavailable"]
+
+    return {
+        "station": stn["name"],
+        "lat": stn["lat"],
+        "lon": stn["lon"],
+        "timestamp": datetime.now().strftime("%I:%M %p, %d %b %Y"),
+        "range_km": 250,
+        "reflectivity_points": reflectivity_points,
+        "active_warnings": warnings,
+    }
 
 @api_router.get("/rain-alert/timeline")
 def get_rain_timeline():

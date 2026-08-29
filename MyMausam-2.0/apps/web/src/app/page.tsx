@@ -18,6 +18,8 @@ import { PersonalizedGreeting } from "@/components/PersonalizedGreeting";
 import { SmartAlerts } from "@/components/SmartAlerts";
 import { TodayForYou } from "@/components/TodayForYou";
 import { PersonalizedWidgets } from "@/components/PersonalizedWidgets";
+import { MausamMoment } from "@/components/MausamMoment";
+import { PersonalizedDashboard } from "@/components/PersonalizedDashboard";
 import { WeatherAPI } from "@/lib/api";
 import { DailyForecastItem, WeatherAlert } from "@/types/weather";
 
@@ -67,6 +69,12 @@ export default function HomePage() {
           <div className="space-y-1.5 animate-fade-in pt-1">
             {/* Personalized Greeting + Data Indicators */}
             <PersonalizedGreeting />
+
+            {/* Mausam Moment — Persona-aware weather insight */}
+            <MausamMoment />
+
+            {/* Personalized Dashboard — Persona-specific cards */}
+            <PersonalizedDashboard />
 
             {/* Current Weather Hero + 3D Wind Compass */}
             <WeatherHero weather={currentWeather} />
