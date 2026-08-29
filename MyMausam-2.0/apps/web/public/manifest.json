@@ -1,0 +1,22 @@
+{
+  "name": "IMD Mausam 2.0",
+  "short_name": "Mausam",
+  "description": "Official National Weather Portal with AI Personalization, Radar, Agromet & Severe Alerts",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#021a32",
+  "theme_color": "#0055A6",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

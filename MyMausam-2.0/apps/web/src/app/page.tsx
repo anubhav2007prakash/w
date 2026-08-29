@@ -12,11 +12,18 @@ import { DailyForecastList } from "@/components/DailyForecastList";
 import { LoadingState } from "@/components/LoadingState";
 import { ErrorState } from "@/components/ErrorState";
 import { useWeather } from "@/context/WeatherContext";
+import { usePersonalization } from "@/context/PersonalizationContext";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
+import { PersonalizedGreeting } from "@/components/PersonalizedGreeting";
+import { SmartAlerts } from "@/components/SmartAlerts";
+import { TodayForYou } from "@/components/TodayForYou";
+import { PersonalizedWidgets } from "@/components/PersonalizedWidgets";
 import { WeatherAPI } from "@/lib/api";
 import { DailyForecastItem, WeatherAlert } from "@/types/weather";
 
 export default function HomePage() {
   const { currentWeather, isLoading, error, refreshWeather, activeLocation } = useWeather();
+  const { hasCompletedOnboarding } = usePersonalization();
   const [dailyItems, setDailyItems] = useState<DailyForecastItem[]>([]);
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -42,6 +49,7 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] pb-24 flex flex-col justify-between">
+      {!hasCompletedOnboarding && <OnboardingWizard />}
       <div>
         {/* Top App Header with GPS & Search */}
         <Header />
@@ -57,11 +65,23 @@ export default function HomePage() {
           </div>
         ) : currentWeather ? (
           <div className="space-y-1.5 animate-fade-in pt-1">
+            {/* Personalized Greeting + Data Indicators */}
+            <PersonalizedGreeting />
+
             {/* Current Weather Hero + 3D Wind Compass */}
             <WeatherHero weather={currentWeather} />
 
             {/* Lifestyle Indices — Heatstroke, UV, AC Usage */}
             <LifestyleIndex weather={currentWeather} />
+
+            {/* Smart Risk-Based Alerts */}
+            <SmartAlerts />
+
+            {/* Today for You — Personalized Timeline */}
+            <TodayForYou />
+
+            {/* Personalized Weather Widgets (ranked by relevance) */}
+            <PersonalizedWidgets />
 
             {/* SIH 26076 AI Persona Engine (8 Personas with specialized telemetry widgets) */}
             <PersonaEngine />

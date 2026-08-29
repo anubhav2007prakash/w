@@ -3,6 +3,7 @@ import random
 from typing import List, Dict, Any
 from app.database import query_one, query_all
 from app.services.imd_service import get_imd_city_weather, get_imd_city_forecast, IMD_API_KEY
+from app.services.accuweather_service import get_current_conditions as accu_get_current, get_5day_forecast as accu_get_forecast, get_alerts as accu_get_alerts, API_KEY as ACCU_API_KEY
 
 WEATHER_CODE_MAP = {
     0: ("Clear Sky", "sun"), 1: ("Mainly Clear", "sun"), 2: ("Partly Cloudy", "cloud-sun"), 3: ("Overcast", "cloud"),
@@ -52,7 +53,14 @@ def get_current_weather(location_name: str = "Ghaziabad") -> Dict[str, Any]:
     now = datetime.datetime.now()
     today = now.strftime("%Y-%m-%d")
 
-    # Try IMD API first if key is configured
+    # Try AccuWeather first, then IMD, then local DB
+    accu_data = accu_get_current(city) if ACCU_API_KEY else None
+    if accu_data:
+        accu_data["location"] = city
+        accu_data["district"] = meta["district"]
+        accu_data["state"] = meta["state"]
+        return accu_data
+
     imd_data = get_imd_city_weather(city) if IMD_API_KEY else None
 
     if imd_data:
@@ -177,7 +185,29 @@ def get_daily_forecast(location_name: str = "Ghaziabad") -> List[Dict[str, Any]]
     city = _find_city(location_name)
     now = datetime.datetime.now()
 
-    # Try IMD API first if key is configured
+    # Try AccuWeather first, then IMD, then local DB
+    accu_fc = accu_get_forecast(city) if ACCU_API_KEY else None
+    if accu_fc and isinstance(accu_fc, dict) and "forecasts" in accu_fc:
+        results = []
+        for i, day in enumerate(accu_fc["forecasts"]):
+            results.append({
+                "date_str": day["date"],
+                "date_short": day["date"],
+                "day_name": "Today" if i == 0 else ("Tomorrow" if i == 1 else day["date"]),
+                "condition": day["condition"],
+                "icon": day["icon"],
+                "min_temp": day["min_temp"],
+                "max_temp": day["max_temp"],
+                "humidity": 60,
+                "rain_probability": day["precipitation_probability"],
+                "wind_speed": day["wind_speed"],
+                "wind_direction": "ENE",
+                "pressure": 1012,
+                "sunrise": accu_fc.get("sunrise", ""),
+                "sunset": accu_fc.get("sunset", ""),
+            })
+        return results
+
     imd_forecast = get_imd_city_forecast(city) if IMD_API_KEY else None
 
     if imd_forecast:

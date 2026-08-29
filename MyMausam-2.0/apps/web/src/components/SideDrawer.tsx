@@ -336,6 +336,11 @@ export const SideDrawer: React.FC = () => {
             }
           },
         },
+        {
+          icon: <Sparkles className="w-5 h-5 text-[#00DDE5]" />,
+          label: "Personalization Settings",
+          path: "/personalization",
+        },
         ...(isAuthenticated
           ? [
               {

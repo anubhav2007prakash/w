@@ -73,15 +73,33 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
       setActiveDistrict(data.district);
       setActiveState(data.state);
       setActiveDate(data.date_str);
+      // Cache for offline use
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mausam_weather_cache", JSON.stringify({ location: locName, data }));
+      }
     } catch (err: any) {
-      console.warn("Using local fallback weather for:", locName);
-      // Resilient fallback
+      console.warn("Using cached/fallback weather for:", locName);
+      // Try cached data first
+      if (typeof window !== "undefined") {
+        const cached = localStorage.getItem("mausam_weather_cache");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          setCurrentWeather(parsed.data);
+          setActiveLocation(parsed.data.location);
+          setActiveDistrict(parsed.data.district);
+          setActiveState(parsed.data.state);
+          setActiveDate(parsed.data.date_str);
+          setIsLoading(false);
+          return;
+        }
+      }
+      // Hard fallback
       setCurrentWeather({
         location: locName,
         district: locName,
         state: "India",
-        date_str: "Thursday, 27 August",
-        updated_at: "08:30 PM IST",
+        date_str: new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" }),
+        updated_at: "Offline",
         temperature: 34.2,
         feels_like: 37.1,
         maximum: 35.8,

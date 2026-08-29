@@ -10,6 +10,9 @@ import { LocationSearchModal } from "@/components/LocationSearchModal";
 import { AuthModal } from "@/components/AuthModal";
 import { BottomNav } from "@/components/BottomNav";
 import { ViewModeToggle } from "@/components/ViewModeToggle";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
+import { ServiceWorkerRegistration } from "@/components/ServiceWorkerRegistration";
+import { PersonalizationProvider } from "@/context/PersonalizationContext";
 
 const roboto = Roboto({
   weight: ["300", "400", "500", "700", "900"],
@@ -54,10 +57,12 @@ export default function RootLayout({
           <div className="absolute -bottom-32 left-1/4 w-96 h-96 bg-[#FFBE00]/10 rounded-full blur-3xl" />
         </div>
 
+        <ServiceWorkerRegistration />
         <AuthProvider>
-          <LanguageProvider>
-            <HtmlLangWrapper />
-            <WeatherProvider>
+          <PersonalizationProvider>
+            <LanguageProvider>
+              <HtmlLangWrapper />
+              <WeatherProvider>
               {/* Main App Container */}
               <div className="relative z-10 w-full max-w-[480px] min-h-screen shadow-2xl bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] flex flex-col">
                 <ViewModeToggle />
@@ -66,9 +71,11 @@ export default function RootLayout({
                 <SideDrawer />
                 <LocationSearchModal />
                 <AuthModal />
+                <OfflineIndicator />
               </div>
-            </WeatherProvider>
-          </LanguageProvider>
+              </WeatherProvider>
+            </LanguageProvider>
+          </PersonalizationProvider>
         </AuthProvider>
       </body>
     </html>
