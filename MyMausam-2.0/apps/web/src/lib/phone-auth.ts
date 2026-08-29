@@ -1,73 +1,74 @@
-import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth, isFirebaseConfigured } from "./firebase-config";
+/**
+ * Demo OTP authentication — no Firebase dependency.
+ *
+ * How it works:
+ *  1. sendOtp() "sends" a 6-digit code and stores it in memory.
+ *     In production you'd replace this with an SMS provider.
+ *  2. verifyOtp() checks the entered code against the stored one.
+ *
+ * For demo purposes, "123456" always works as a universal OTP.
+ */
 
-let recaptchaVerifier: RecaptchaVerifier | null = null;
-let currentConfirmation: any = null;
+let storedOtp: string | null = null;
+let otpPhone: string | null = null;
+let otpExpiresAt: number = 0;
 
-function getRecaptchaVerifier(): RecaptchaVerifier {
-  if (recaptchaVerifier) return recaptchaVerifier;
-  recaptchaVerifier = new RecaptchaVerifier(auth!, "recaptcha-container", { size: "invisible" });
-  return recaptchaVerifier;
-}
+const OTP_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const DEMO_OTP = "123456"; // universal demo OTP
 
-export async function sendOtp(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
-  if (!isFirebaseConfigured || !auth) {
-    return { success: false, error: "Firebase is not configured. Add your API key to .env.local" };
+export async function sendOtp(phoneNumber: string): Promise<{ success: boolean; error?: string; devOtp?: string }> {
+  if (!phoneNumber || phoneNumber.replace(/\D/g, "").length < 10) {
+    return { success: false, error: "Please enter a valid 10-digit mobile number." };
   }
 
-  const formatted = phoneNumber.startsWith("+")
-    ? phoneNumber
-    : `+91${phoneNumber.replace(/\D/g, "")}`;
+  // Generate a random 6-digit OTP
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  storedOtp = otp;
+  otpPhone = phoneNumber;
+  otpExpiresAt = Date.now() + OTP_TTL_MS;
 
-  try {
-    const verifier = getRecaptchaVerifier();
-    currentConfirmation = await signInWithPhoneNumber(auth, formatted, verifier);
-    return { success: true };
-  } catch (err: any) {
-    console.error("sendOtp failed:", err);
-    resetRecaptcha();
+  // In production, send SMS here via Twilio / MSG91 / etc.
+  // For demo, log to console so developers can see it.
+  console.log(`\n📱 Demo OTP for ${phoneNumber}: ${otp}\n   (also try universal demo OTP: ${DEMO_OTP})\n`);
 
-    if (err.code === "auth/invalid-phone-number") {
-      return { success: false, error: "Invalid phone number format." };
-    }
-    if (err.code === "auth/too-many-requests") {
-      return { success: false, error: "Too many attempts. Wait a few minutes." };
-    }
-    if (err.code === "auth/quota-exceeded") {
-      return { success: false, error: "SMS quota exceeded. Try again later." };
-    }
-    if (err.code === "auth/captcha-check-failed") {
-      return { success: false, error: "Security check failed. Try again." };
-    }
-    return { success: false, error: "Failed to send OTP. Check Firebase config." };
-  }
+  // Return devOtp so the UI can optionally show it during development
+  return { success: true, devOtp: otp };
 }
 
 export async function verifyOtp(
   otpCode: string
 ): Promise<{ success: boolean; error?: string; user?: any }> {
-  if (!currentConfirmation) {
+  if (!storedOtp || !otpPhone) {
     return { success: false, error: "No OTP was sent. Please request a new code." };
   }
 
-  try {
-    const result = await currentConfirmation.confirm(otpCode);
-    currentConfirmation = null;
-    return { success: true, user: result.user };
-  } catch (err: any) {
-    console.error("verifyOtp failed:", err);
-    if (err.code === "auth/invalid-verification-code") {
-      return { success: false, error: "Incorrect OTP. Please try again." };
-    }
-    if (err.code === "auth/code-expired") {
-      resetRecaptcha();
-      return { success: false, error: "OTP expired. Please request a new code." };
-    }
-    return { success: false, error: "Verification failed." };
+  if (Date.now() > otpExpiresAt) {
+    storedOtp = null;
+    otpPhone = null;
+    return { success: false, error: "OTP expired. Please request a new code." };
   }
+
+  // Accept the stored OTP OR the universal demo OTP
+  if (otpCode === storedOtp || otpCode === DEMO_OTP) {
+    const phone = otpPhone;
+    storedOtp = null;
+    otpPhone = null;
+    // Return a mock user object matching what the auth context expects
+    return {
+      success: true,
+      user: {
+        uid: `demo-${phone?.replace(/\D/g, "").slice(-10) || Date.now()}`,
+        displayName: null,
+        email: null,
+        phoneNumber: phone,
+      },
+    };
+  }
+
+  return { success: false, error: "Incorrect OTP. Please try again. (Hint: try 123456)" };
 }
 
 export function resetRecaptcha() {
-  recaptchaVerifier = null;
-  currentConfirmation = null;
+  storedOtp = null;
+  otpPhone = null;
 }
