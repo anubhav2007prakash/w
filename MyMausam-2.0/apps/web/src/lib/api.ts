@@ -15,9 +15,15 @@ import {
   AviationData,
   AgrometData,
   RouteNowcastData,
+  HeatColdWaveAlert,
+  FloodRiskPoint,
+  SeasonalOutlook,
+  MonsoonData,
+  MountainStation,
+  AirQualityStation,
 } from "@/types/weather";
 
-const API_BASE = "http://127.0.0.1:8000/api";
+const API_BASE = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000") + "/api";
 
 async function fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, {
@@ -110,4 +116,40 @@ export const WeatherAPI = {
       method: "PUT",
       body: JSON.stringify(data),
     }),
+
+  // ── Heat/Cold Wave ────────────────────────────────
+  getHeatColdWaveAlerts: (location?: string) =>
+    fetchJson<HeatColdWaveAlert[]>(
+      `${API_BASE}/heatwave${location ? `?location=${encodeURIComponent(location)}` : ""}`
+    ),
+
+  // ── Urban Flood ───────────────────────────────────
+  getFloodRisk: (location?: string) =>
+    fetchJson<FloodRiskPoint[]>(
+      `${API_BASE}/flood-nowcast${location ? `?location=${encodeURIComponent(location)}` : ""}`
+    ),
+
+  // ── Seasonal Outlook ──────────────────────────────
+  getSeasonalOutlook: (region?: string) =>
+    fetchJson<SeasonalOutlook[]>(
+      `${API_BASE}/seasonal-outlook${region ? `?region=${encodeURIComponent(region)}` : ""}`
+    ),
+
+  // ── Monsoon Tracker ───────────────────────────────
+  getMonsoonData: (region?: string) =>
+    fetchJson<MonsoonData>(
+      `${API_BASE}/monsoon-tracker${region ? `?region=${encodeURIComponent(region)}` : ""}`
+    ),
+
+  // ── Mountain Weather ──────────────────────────────
+  getMountainWeather: (station?: string) =>
+    fetchJson<MountainStation[]>(
+      `${API_BASE}/mountain-weather${station ? `?station=${encodeURIComponent(station)}` : ""}`
+    ),
+
+  // ── Air Quality (SAFAR) ───────────────────────────
+  getAirQuality: (location?: string) =>
+    fetchJson<AirQualityStation[]>(
+      `${API_BASE}/air-quality${location ? `?location=${encodeURIComponent(location)}` : ""}`
+    ),
 };

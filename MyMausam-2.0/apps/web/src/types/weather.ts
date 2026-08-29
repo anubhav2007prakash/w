@@ -275,6 +275,113 @@ export interface RouteNowcastData {
   waypoints: RoutePointWeather[];
 }
 
+// ── Heat/Cold Wave ─────────────────────────────────────
+export interface HeatColdWaveAlert {
+  id: number;
+  district: string;
+  state: string;
+  alert_type: "Heat Wave" | "Severe Heat Wave" | "Cold Wave" | "Severe Cold Wave";
+  max_temp: number;
+  min_temp: number;
+  heat_index: number;
+  severity: string;
+  color: string;
+  issued_date: string;
+  valid_upto: string;
+  advisory: string;
+}
+
+// ── Urban Flood ────────────────────────────────────────
+export interface FloodRiskPoint {
+  city: string;
+  state: string;
+  lat: number;
+  lon: number;
+  rainfall_24h_mm: number;
+  rainfall_intensity: string;
+  water_level_m: number;
+  risk_level: string;
+  risk_color: string;
+  affected_areas: string[];
+  advisory: string;
+}
+
+// ── Seasonal Outlook ───────────────────────────────────
+export interface SeasonalOutlook {
+  season: string;
+  period: string;
+  region: string;
+  temp_departure: string;
+  temp_value: string;
+  rainfall_departure: string;
+  rainfall_value: string;
+  confidence: string;
+  description: string;
+  source: string;
+  last_updated: string;
+}
+
+// ── Monsoon Tracker ────────────────────────────────────
+export interface MonsoonStation {
+  name: string;
+  region: string;
+  onset_date: string;
+  withdrawal_date: string;
+  rainfall_mm: number;
+  normal_mm: number;
+  departure_pct: number;
+  status: string;
+  color: string;
+}
+
+export interface MonsoonData {
+  all_india_pct_lpa: number;
+  active_regions: number;
+  deficient_regions: number;
+  excess_regions: number;
+  last_updated: string;
+  stations: MonsoonStation[];
+}
+
+// ── Mountain Weather ───────────────────────────────────
+export interface MountainStation {
+  name: string;
+  altitude_m: number;
+  region: string;
+  lat: number;
+  lon: number;
+  temperature: number;
+  feels_like: number;
+  wind_speed: number;
+  wind_gust: number;
+  snowfall_24h_cm: number;
+  visibility: string;
+  avalanche_risk: string;
+  avalanche_color: string;
+  condition: string;
+  advisory: string;
+  source: string;
+  last_updated: string;
+}
+
+// ── Air Quality (SAFAR) ────────────────────────────────
+export interface AirQualityStation {
+  city: string;
+  aqi: number;
+  aqi_category: string;
+  aqi_color: string;
+  pm25: number;
+  pm10: number;
+  no2: number;
+  so2: number;
+  co: number;
+  o3: number;
+  primary_pollutant: string;
+  health_advisory: string;
+  source: string;
+  last_updated: string;
+}
+
 export type PersonaType =
   | "health"
   | "runner"
