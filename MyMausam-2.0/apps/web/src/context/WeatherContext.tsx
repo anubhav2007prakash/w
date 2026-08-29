@@ -79,13 +79,13 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err: any) {
       console.warn("Using cached/fallback weather for:", locName);
-      // Try cached data first
+      // Try cached data first — but keep the user's selected location name
       if (typeof window !== "undefined") {
         const cached = localStorage.getItem("mausam_weather_cache");
         if (cached) {
           const parsed = JSON.parse(cached);
-          setCurrentWeather(parsed.data);
-          setActiveLocation(parsed.data.location);
+          setCurrentWeather({ ...parsed.data, location: locName });
+          setActiveLocation(locName);
           setActiveDistrict(parsed.data.district);
           setActiveState(parsed.data.state);
           setActiveDate(parsed.data.date_str);
