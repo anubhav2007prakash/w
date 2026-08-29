@@ -1,0 +1,9 @@
+{
+  "name": "mausam-2.0",
+  "private": true,
+  "scripts": {
+    "build": "cd MyMausam-2.0/apps/web && npm install && npm run build",
+    "start": "cd MyMausam-2.0/apps/web && npm start",
+    "dev": "cd MyMausam-2.0/apps/web && npm run dev"
+  }
+}

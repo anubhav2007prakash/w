@@ -1,0 +1,6 @@
+{
+  "buildCommand": "cd MyMausam-2.0/apps/web && npm install && npm run build",
+  "outputDirectory": "MyMausam-2.0/apps/web/.next",
+  "installCommand": "cd MyMausam-2.0/apps/web && npm install",
+  "framework": "nextjs"
+}
