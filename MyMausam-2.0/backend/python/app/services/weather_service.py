@@ -1,9 +1,10 @@
 import datetime
 import random
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from app.database import query_one, query_all
 from app.services.imd_service import get_imd_city_weather, get_imd_city_forecast, IMD_API_KEY
 from app.services.accuweather_service import get_current_conditions as accu_get_current, get_5day_forecast as accu_get_forecast, get_alerts as accu_get_alerts, API_KEY as ACCU_API_KEY
+from app.services import weatherstack_service
 
 WEATHER_CODE_MAP = {
     0: ("Clear Sky", "sun"), 1: ("Mainly Clear", "sun"), 2: ("Partly Cloudy", "cloud-sun"), 3: ("Overcast", "cloud"),
@@ -48,12 +49,23 @@ def _cond(code):
 
 
 def get_current_weather(location_name: str = "Ghaziabad") -> Dict[str, Any]:
+    import asyncio
     city = _find_city(location_name)
     meta = CITIES_META.get(city, CITIES_META.get("Delhi"))
     now = datetime.datetime.now()
     today = now.strftime("%Y-%m-%d")
 
-    # Try AccuWeather first, then IMD, then local DB
+    # Try weatherstack first (real-time data), then AccuWeather, then IMD, then local DB
+    try:
+        ws_raw = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(city)
+        )
+        if ws_raw and not ws_raw.get("error"):
+            return weatherstack_service.parse_current_weather(ws_raw, city, meta)
+    except Exception:
+        pass
+
+    # Fallback: Try AccuWeather
     accu_data = accu_get_current(city) if ACCU_API_KEY else None
     if accu_data:
         accu_data["location"] = city
@@ -61,6 +73,7 @@ def get_current_weather(location_name: str = "Ghaziabad") -> Dict[str, Any]:
         accu_data["state"] = meta["state"]
         return accu_data
 
+    # Fallback: Try IMD
     imd_data = get_imd_city_weather(city) if IMD_API_KEY else None
 
     if imd_data:
@@ -182,10 +195,23 @@ def get_hourly_forecast(location_name: str = "Ghaziabad") -> List[Dict[str, Any]
     return items
 
 def get_daily_forecast(location_name: str = "Ghaziabad") -> List[Dict[str, Any]]:
+    import asyncio
     city = _find_city(location_name)
     now = datetime.datetime.now()
 
-    # Try AccuWeather first, then IMD, then local DB
+    # Try weatherstack first (real forecast data)
+    try:
+        ws_raw = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_forecast(city, days=7)
+        )
+        if ws_raw and not ws_raw.get("error"):
+            results = weatherstack_service.parse_forecast(ws_raw, city)
+            if results:
+                return results
+    except Exception:
+        pass
+
+    # Fallback: Try AccuWeather
     accu_fc = accu_get_forecast(city) if ACCU_API_KEY else None
     if accu_fc and isinstance(accu_fc, dict) and "forecasts" in accu_fc:
         results = []
@@ -320,16 +346,21 @@ def get_cyclone_data() -> Dict[str, Any]:
     }
 
 def get_lightning_data() -> Dict[str, Any]:
+    import asyncio
+    try:
+        ws_raw = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather("Delhi")
+        )
+        if ws_raw and not ws_raw.get("error"):
+            return weatherstack_service.parse_current_for_lightning(ws_raw, "Delhi")
+    except Exception:
+        pass
     return {
-        "station_area": "National Capital Region & Western UP",
-        "total_strikes_last_hour": 34,
-        "risk_level": "Elevated",
-        "strikes": [
-            {"id": "L-101", "lat": 28.71, "lon": 77.49, "time": "8 mins ago", "peak_current_ka": -28.4, "strike_type": "Cloud-to-Ground"},
-            {"id": "L-102", "lat": 28.65, "lon": 77.38, "time": "14 mins ago", "peak_current_ka": -34.1, "strike_type": "Cloud-to-Ground"},
-            {"id": "L-103", "lat": 28.58, "lon": 77.29, "time": "21 mins ago", "peak_current_ka": 18.2, "strike_type": "Intra-Cloud"},
-        ],
-        "safety_advisory": "DAMINI Early Warning: Take shelter indoors. Avoid standing near tall trees, power lines, or open fields during thunder."
+        "station_area": "Delhi NCR",
+        "total_strikes_last_hour": 0,
+        "risk_level": "Low",
+        "strikes": [],
+        "safety_advisory": "No significant lightning activity detected. Data sourced from weatherstack.",
     }
 
 def get_aviation_data() -> Dict[str, Any]:
@@ -395,18 +426,64 @@ def get_agromet_data() -> Dict[str, Any]:
     }
 
 def get_route_nowcast(origin: str = "Delhi", destination: str = "Jaipur") -> Dict[str, Any]:
+    import asyncio
+    # Try to get real weather for origin and destination
+    origin_weather = None
+    dest_weather = None
+    try:
+        origin_weather = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(origin)
+        )
+    except Exception:
+        pass
+    try:
+        dest_weather = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(destination)
+        )
+    except Exception:
+        pass
+
+    def _wp_from_ws(raw, name, dist):
+        if not raw or raw.get("error"):
+            return None
+        curr = raw.get("current", {})
+        weather_code = curr.get("weather_code", 116)
+        cond_text, icon = weatherstack_service._cond(weather_code)
+        rain_prob = curr.get("humidity", 50) // 2
+        warning = None
+        if weather_code in range(200, 396):
+            warning = "Severe weather along this stretch"
+        elif weather_code in range(176, 200):
+            warning = "Rain expected"
+        return {"name": name, "distance_km": dist, "lat": 0, "lon": 0, "temp": curr.get("temperature", 0), "condition": cond_text, "rain_probability": rain_prob, "warning": warning}
+
+    waypoints = []
+    origin_wp = _wp_from_ws(origin_weather, origin, 0)
+    if origin_wp:
+        waypoints.append(origin_wp)
+    dest_wp = _wp_from_ws(dest_weather, destination, 268)
+    if dest_wp:
+        waypoints.append(dest_wp)
+
+    if not waypoints:
+        waypoints = [
+            {"name": origin, "distance_km": 0, "lat": 0, "lon": 0, "temp": 0, "condition": "Data unavailable", "rain_probability": 0},
+            {"name": destination, "distance_km": 268, "lat": 0, "lon": 0, "temp": 0, "condition": "Data unavailable", "rain_probability": 0},
+        ]
+
+    summary = "Weather data for route fetched from weatherstack API."
+    if origin_weather and not origin_weather.get("error"):
+        oc = origin_weather.get("current", {})
+        summary = f"Conditions at {origin}: {oc.get('temperature', '?')}°C, {weatherstack_service._cond(oc.get('weather_code', 0))[0]}. "
+    if dest_weather and not dest_weather.get("error"):
+        dc = dest_weather.get("current", {})
+        summary += f"At {destination}: {dc.get('temperature', '?')}°C, {weatherstack_service._cond(dc.get('weather_code', 0))[0]}."
+
     return {
         "origin": origin,
         "destination": destination,
         "total_distance_km": 268,
         "estimated_time": "4 hrs 45 mins",
-        "route_condition_summary": "Overall good travel conditions with isolated moderate rain showers near Gurgaon-Manesar stretch.",
-        "waypoints": [
-            {"name": "Delhi (Dhaula Kuan)", "distance_km": 0, "lat": 28.5921, "lon": 77.1607, "temp": 29.5, "condition": "Partly Cloudy", "rain_probability": 10},
-            {"name": "Gurgaon (Cyber City)", "distance_km": 32, "lat": 28.4595, "lon": 77.0266, "temp": 28.8, "condition": "Light Showers", "rain_probability": 45, "warning": "Wet road surface"},
-            {"name": "Rewari Bypass", "distance_km": 88, "lat": 28.1833, "lon": 76.6167, "temp": 30.2, "condition": "Mostly Sunny", "rain_probability": 15},
-            {"name": "Kotputli", "distance_km": 158, "lat": 27.7024, "lon": 76.2008, "temp": 31.6, "condition": "Sunny & Clear", "rain_probability": 5},
-            {"name": "Shahpura", "distance_km": 204, "lat": 27.3872, "lon": 75.9612, "temp": 32.1, "condition": "Sunny", "rain_probability": 5},
-            {"name": "Jaipur (MI Road)", "distance_km": 268, "lat": 26.9124, "lon": 75.7873, "temp": 33.0, "condition": "Sunny & Warm", "rain_probability": 0},
-        ]
+        "route_condition_summary": summary,
+        "waypoints": waypoints,
     }

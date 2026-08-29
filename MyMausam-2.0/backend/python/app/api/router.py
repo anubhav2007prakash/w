@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.database import query_all, query_one, execute_write
 from app.services import weather_service
+from app.services import weatherstack_service
 
 # ── In-memory OTP store (phone → {code, expires_at}) ──────────────
 _otp_store: Dict[str, Dict[str, Any]] = {}
@@ -245,21 +246,36 @@ def get_route_nowcast(origin: Optional[str] = Query("Delhi"), destination: Optio
 # 7. Heat/Cold Wave Alerts
 @api_router.get("/heatwave")
 def get_heatwave_alerts(location: Optional[str] = Query(None)):
-    """Derives heat/cold wave alerts from current weather data."""
+    """Derives heat/cold wave alerts from weatherstack real-time data."""
+    import asyncio
     loc = location or "Delhi"
-    try:
-        weather = weather_service.get_current_weather(loc)
-    except Exception:
-        weather = {"temperature": 30, "feels_like": 32, "location": loc}
-    temp = weather.get("temperature", 30)
-    feels = weather.get("feels_like", temp)
     alerts = []
-    if temp >= 45:
-        alerts.append({"id": 1, "district": loc, "state": "", "alert_type": "Severe Heat Wave", "max_temp": temp, "min_temp": temp - 5, "heat_index": feels, "severity": "Severe", "color": "#FF2020", "issued_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "valid_upto": (datetime.datetime.now() + datetime.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M"), "advisory": "Extreme heat. Avoid all outdoor exposure 12-4 PM. Drink ORS every 30 min."})
-    elif temp >= 40:
-        alerts.append({"id": 1, "district": loc, "state": "", "alert_type": "Heat Wave", "max_temp": temp, "min_temp": temp - 4, "heat_index": feels, "severity": "Moderate", "color": "#FF7400", "issued_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "valid_upto": (datetime.datetime.now() + datetime.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M"), "advisory": "Heat wave conditions. Stay hydrated. Avoid strenuous outdoor work during peak hours."})
-    elif temp <= 2:
-        alerts.append({"id": 1, "district": loc, "state": "", "alert_type": "Cold Wave", "max_temp": temp, "min_temp": temp - 8, "heat_index": feels, "severity": "Moderate", "color": "#00BFFF", "issued_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "valid_upto": (datetime.datetime.now() + datetime.timedelta(hours=24)).strftime("%Y-%m-%d %H:%M"), "advisory": "Cold wave conditions. Wear warm layers. Protect livestock and pipes from freezing."})
+    # Try weatherstack first
+    try:
+        ws_raw = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(loc)
+        )
+        if ws_raw and not ws_raw.get("error"):
+            meta = weather_service.CITIES_META.get(loc, {})
+            alert = weatherstack_service.parse_current_for_heatwave(ws_raw, loc, meta)
+            if alert:
+                alerts.append(alert)
+    except Exception:
+        pass
+    if not alerts:
+        # Fallback to existing weather service
+        try:
+            weather = weather_service.get_current_weather(loc)
+            temp = weather.get("temperature", 30)
+            feels = weather.get("feels_like", temp)
+            if temp >= 45:
+                alerts.append({"id": 1, "district": loc, "state": "", "alert_type": "Severe Heat Wave", "max_temp": temp, "min_temp": temp - 5, "heat_index": feels, "severity": "Severe", "color": "#FF2020", "issued_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "valid_upto": "", "advisory": "Extreme heat. Avoid outdoor exposure 12-4 PM."})
+            elif temp >= 40:
+                alerts.append({"id": 1, "district": loc, "state": "", "alert_type": "Heat Wave", "max_temp": temp, "min_temp": temp - 4, "heat_index": feels, "severity": "Moderate", "color": "#FF7400", "issued_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "valid_upto": "", "advisory": "Heat wave. Stay hydrated."})
+            elif temp <= 2:
+                alerts.append({"id": 1, "district": loc, "state": "", "alert_type": "Cold Wave", "max_temp": temp, "min_temp": temp - 8, "heat_index": feels, "severity": "Moderate", "color": "#00BFFF", "issued_date": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), "valid_upto": "", "advisory": "Cold wave. Wear warm layers."})
+        except Exception:
+            pass
     # Also check DB for any stored alerts
     try:
         db_alerts = query_all("SELECT * FROM weather_alerts WHERE is_active = 1")
@@ -274,46 +290,40 @@ def get_heatwave_alerts(location: Optional[str] = Query(None)):
 # 8. Urban Flood Nowcast
 @api_router.get("/flood-nowcast")
 def get_flood_nowcast(location: Optional[str] = Query(None)):
-    """Derives flood risk from weather/rainfall data using rule-based assessment."""
+    """Derives flood risk from weatherstack real-time data."""
+    import asyncio
     loc = location or "Delhi"
+    # Try weatherstack first
+    try:
+        ws_raw = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(loc)
+        )
+        if ws_raw and not ws_raw.get("error"):
+            return [weatherstack_service.parse_current_for_flood(ws_raw, loc)]
+    except Exception:
+        pass
+    # Fallback to existing weather service
     try:
         weather = weather_service.get_current_weather(loc)
+        humidity = weather.get("humidity", 60)
+        condition = (weather.get("condition", "") or "").lower()
+        rain_indicators = sum([
+            1 if "rain" in condition else 0,
+            1 if "shower" in condition else 0,
+            1 if "thunder" in condition else 0,
+            1 if humidity > 85 else 0,
+        ])
+        if rain_indicators >= 3:
+            risk, color, rain_mm, intensity = "High", "#FF7400", 80 + humidity * 0.5, "Heavy"
+        elif rain_indicators >= 2:
+            risk, color, rain_mm, intensity = "Moderate", "#FFBE00", 30 + humidity * 0.3, "Moderate"
+        elif rain_indicators >= 1:
+            risk, color, rain_mm, intensity = "Low", "#8ED329", 10 + humidity * 0.1, "Light"
+        else:
+            risk, color, rain_mm, intensity = "Minimal", "#8ED329", 0, "None"
+        return [{"city": loc, "state": "", "lat": 0, "lon": 0, "rainfall_24h_mm": round(rain_mm, 1), "rainfall_intensity": intensity, "water_level_m": round(rain_mm / 100, 2), "risk_level": risk, "risk_color": color, "affected_areas": [], "advisory": f"Risk assessed from weather data ({weather.get('condition', 'N/A')}, humidity {humidity}%)."}]
     except Exception:
-        weather = {"temperature": 30, "humidity": 60, "wind_speed": 10, "location": loc, "condition": "Unknown"}
-    humidity = weather.get("humidity", 60)
-    temp = weather.get("temperature", 30)
-    condition = (weather.get("condition", "") or "").lower()
-    # Rule-based flood risk assessment
-    rain_indicators = sum([
-        1 if "rain" in condition else 0,
-        1 if "shower" in condition else 0,
-        1 if "thunder" in condition else 0,
-        1 if humidity > 85 else 0,
-        1 if "heavy" in condition else 0,
-    ])
-    if rain_indicators >= 3:
-        risk = "High"
-        color = "#FF7400"
-        rain_mm = 80 + humidity * 0.5
-        intensity = "Heavy"
-    elif rain_indicators >= 2:
-        risk = "Moderate"
-        color = "#FFBE00"
-        rain_mm = 30 + humidity * 0.3
-        intensity = "Moderate"
-    elif rain_indicators >= 1:
-        risk = "Low"
-        color = "#8ED329"
-        rain_mm = 10 + humidity * 0.1
-        intensity = "Light"
-    else:
-        risk = "Minimal"
-        color = "#8ED329"
-        rain_mm = 0
-        intensity = "None"
-    return [{
-        "city": loc, "state": "", "lat": 28.6, "lon": 77.2, "rainfall_24h_mm": round(rain_mm, 1), "rainfall_intensity": intensity, "water_level_m": round(rain_mm / 100, 2), "risk_level": risk, "risk_color": color, "affected_areas": [], "advisory": f"Risk assessed from current weather ({weather.get('condition', 'N/A')}, humidity {humidity}%). {risk} flood risk. Monitor local drainage." if rain_indicators > 0 else "No significant flood risk at this time. Conditions are dry."
-    }]
+        return [{"city": loc, "state": "", "lat": 0, "lon": 0, "rainfall_24h_mm": 0, "rainfall_intensity": "None", "water_level_m": 0, "risk_level": "Minimal", "risk_color": "#8ED329", "affected_areas": [], "advisory": "No data available."}]
 
 
 # 9. Seasonal Climate Outlook
@@ -358,7 +368,8 @@ def get_seasonal_outlook(region: Optional[str] = Query(None)):
 # 10. Monsoon Tracker
 @api_router.get("/monsoon-tracker")
 def get_monsoon_tracker(region: Optional[str] = Query(None)):
-    """Returns monsoon status derived from current weather conditions."""
+    """Returns monsoon status from weatherstack real-time data."""
+    import asyncio
     now = datetime.datetime.now()
     month = now.month
     monsoon_active = 6 <= month <= 9
@@ -366,15 +377,20 @@ def get_monsoon_tracker(region: Optional[str] = Query(None)):
     sample_cities = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bengaluru", "Jaipur", "Lucknow", "Shimla"]
     for city in sample_cities:
         try:
-            w = weather_service.get_current_weather(city)
-            temp = w.get("temperature", 30)
-            humidity = w.get("humidity", 60)
-            condition = (w.get("condition", "") or "").lower()
-            rain_active = any(x in condition for x in ["rain", "shower", "thunder", "drizzle"])
-            est_rainfall = humidity * 1.5 if rain_active else humidity * 0.3
-            normal = 150 if monsoon_active else 50
-            departure = round(((est_rainfall - normal) / normal) * 100, 1) if normal > 0 else 0
-            stations_data.append({"name": city, "region": w.get("state", ""), "onset_date": "01 Jun", "withdrawal_date": "15 Oct", "rainfall_mm": round(est_rainfall, 1), "normal_mm": normal, "departure_pct": departure, "status": "Active" if rain_active else "Dry", "color": "#8ED329" if abs(departure) < 20 else "#FFBE00" if departure < -20 else "#00BFFF"})
+            ws_raw = asyncio.get_event_loop().run_until_complete(
+                weatherstack_service.get_current_weather(city)
+            )
+            if ws_raw and not ws_raw.get("error"):
+                stations_data.append(weatherstack_service.parse_current_for_monsoon(ws_raw, city))
+            else:
+                w = weather_service.get_current_weather(city)
+                humidity = w.get("humidity", 60)
+                condition = (w.get("condition", "") or "").lower()
+                rain_active = any(x in condition for x in ["rain", "shower", "thunder", "drizzle"])
+                est_rainfall = humidity * 1.5 if rain_active else humidity * 0.3
+                normal = 150 if monsoon_active else 50
+                departure = round(((est_rainfall - normal) / normal) * 100, 1) if normal > 0 else 0
+                stations_data.append({"name": city, "region": w.get("state", ""), "onset_date": "01 Jun", "withdrawal_date": "15 Oct", "rainfall_mm": round(est_rainfall, 1), "normal_mm": normal, "departure_pct": departure, "status": "Active" if rain_active else "Dry", "color": "#8ED329" if abs(departure) < 20 else "#FFBE00" if departure < -20 else "#00BFFF"})
         except Exception:
             stations_data.append({"name": city, "region": "", "onset_date": "01 Jun", "withdrawal_date": "15 Oct", "rainfall_mm": 0, "normal_mm": 50, "departure_pct": 0, "status": "No Data", "color": "#999"})
     active = sum(1 for s in stations_data if s["status"] == "Active")
@@ -425,8 +441,19 @@ def get_mountain_weather(station: Optional[str] = Query(None)):
 # 12. Air Quality (SAFAR)
 @api_router.get("/air-quality")
 def get_air_quality(location: Optional[str] = Query(None)):
-    """Returns AQI data from current weather's AQI field or DB."""
+    """Returns AQI data from weatherstack real-time data."""
+    import asyncio
     loc = location or "Delhi"
+    # Try weatherstack first
+    try:
+        ws_raw = asyncio.get_event_loop().run_until_complete(
+            weatherstack_service.get_current_weather(loc)
+        )
+        if ws_raw and not ws_raw.get("error"):
+            return [weatherstack_service.parse_current_for_air_quality(ws_raw, loc)]
+    except Exception:
+        pass
+    # Fallback
     try:
         weather = weather_service.get_current_weather(loc)
         aqi_info = weather.get("aqi", {})
