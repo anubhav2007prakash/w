@@ -5,6 +5,7 @@ import { Search, MapPin, X, Navigation, History, Star, Building2 } from "lucide-
 import { useWeather } from "@/context/WeatherContext";
 import { LocationItem } from "@/types/weather";
 import { WeatherAPI } from "@/lib/api";
+import { INDIAN_CITIES, searchIndianCities, toLocationItems } from "@/lib/indian-cities";
 
 const TOP_METRO_HUBS = [
   "New Delhi",
@@ -32,7 +33,10 @@ export const LocationSearchModal: React.FC = () => {
         setLocations(list);
         setFilteredLocations(list);
       } catch (err) {
-        console.warn("Location list fallback:", err);
+        // Backend unavailable — use comprehensive client-side city database
+        const fallback = toLocationItems(INDIAN_CITIES);
+        setLocations(fallback);
+        setFilteredLocations(fallback);
       }
     }
     if (isSearchOpen) {
@@ -44,15 +48,9 @@ export const LocationSearchModal: React.FC = () => {
     if (!searchQuery.trim()) {
       setFilteredLocations(locations);
     } else {
-      const q = searchQuery.toLowerCase();
-      setFilteredLocations(
-        locations.filter(
-          (loc) =>
-            loc.name.toLowerCase().includes(q) ||
-            loc.district.toLowerCase().includes(q) ||
-            loc.state.toLowerCase().includes(q)
-        )
-      );
+      // Use client-side fuzzy search on the full Indian cities database
+      const results = toLocationItems(searchIndianCities(searchQuery));
+      setFilteredLocations(results);
     }
   }, [searchQuery, locations]);
 
@@ -150,8 +148,10 @@ export const LocationSearchModal: React.FC = () => {
               </button>
             ))
           ) : (
-            <div className="p-8 text-center text-white/60 text-xs">
-              No matching locations found for "{searchQuery}".
+            <div className="p-8 text-center text-white/60 text-xs space-y-2">
+              <MapPin className="w-8 h-8 mx-auto text-white/30" />
+              <p>No locations match &quot;{searchQuery}&quot;</p>
+              <p className="text-white/40 text-[10px]">Try a city name, district, or state (e.g. Shimla, Kutch, Kerala)</p>
             </div>
           )}
         </div>
