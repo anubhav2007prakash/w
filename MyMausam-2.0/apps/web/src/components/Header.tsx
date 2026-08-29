@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Menu,
   Search,
@@ -25,6 +25,7 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ showBack, title, subtitle }) => {
+  const [mounted, setMounted] = useState(false);
   const {
     activeLocation,
     activeDate,
@@ -37,6 +38,30 @@ export const Header: React.FC<HeaderProps> = ({ showBack, title, subtitle }) => 
   } = useWeather();
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Render a placeholder on server / during hydration to avoid mismatch
+  if (!mounted) {
+    return (
+      <header className="px-4 pt-3 pb-2 flex items-center justify-between sticky top-0 z-30 bg-[#0055A6]/70 backdrop-blur-md border-b border-white/10 select-none">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-white/10 animate-pulse" />
+          <div>
+            <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+            <div className="h-3 w-16 bg-white/10 rounded animate-pulse mt-1" />
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <div className="w-9 h-9 rounded-2xl bg-white/10 animate-pulse" />
+          <div className="w-9 h-9 rounded-2xl bg-white/10 animate-pulse" />
+          <div className="w-9 h-9 rounded-2xl bg-white/10 animate-pulse" />
+        </div>
+      </header>
+    );
+  }
 
   const handleProfileClick = () => {
     if (isAuthenticated) {
