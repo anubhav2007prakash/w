@@ -71,13 +71,24 @@ async def get_current_weather(location: str) -> Optional[Dict[str, Any]]:
     """Fetch current weather from weatherstack for a location."""
     if not WEATHERSTACK_API_KEY:
         return None
+    # Ensure Indian cities get resolved to India, not Canada/USA
+    query = location
+    indian_cities = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bengaluru", "Bangalore",
+                     "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow", "Ghaziabad",
+                     "Noida", "Shimla", "Leh", "Srinagar", "Patna", "Bhopal", "Indore",
+                     "Nagpur", "Visakhapatnam", "Kochi", "Thiruvananthapuram", "Guwahati"]
+    for ic in indian_cities:
+        if ic.lower() in location.lower():
+            if "," not in location:
+                query = f"{location}, India"
+            break
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
                 f"{WEATHERSTACK_BASE}/current",
                 params={
                     "access_key": WEATHERSTACK_API_KEY,
-                    "query": location,
+                    "query": query,
                     "units": "m",
                 },
             )
@@ -95,13 +106,23 @@ async def get_forecast(location: str, days: int = 7) -> Optional[Dict[str, Any]]
     """Fetch forecast from weatherstack for a location."""
     if not WEATHERSTACK_API_KEY:
         return None
+    query = location
+    indian_cities = ["Delhi", "Mumbai", "Kolkata", "Chennai", "Bengaluru", "Bangalore",
+                     "Hyderabad", "Ahmedabad", "Pune", "Jaipur", "Lucknow", "Ghaziabad",
+                     "Noida", "Shimla", "Leh", "Srinagar", "Patna", "Bhopal", "Indore",
+                     "Nagpur", "Visakhapatnam", "Kochi", "Thiruvananthapuram", "Guwahati"]
+    for ic in indian_cities:
+        if ic.lower() in location.lower():
+            if "," not in location:
+                query = f"{location}, India"
+            break
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.get(
                 f"{WEATHERSTACK_BASE}/forecast",
                 params={
                     "access_key": WEATHERSTACK_API_KEY,
-                    "query": location,
+                    "query": query,
                     "forecast_days": min(days, 14),
                     "units": "m",
                 },
