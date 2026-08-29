@@ -26,6 +26,8 @@ import { useWeather } from "@/context/WeatherContext";
 import { PersonaType } from "@/types/weather";
 import { UserAvatar } from "@/components/UserAvatar";
 import { AVATAR_PRESETS } from "@/lib/avatars";
+import { CountryCodePicker } from "@/components/CountryCodePicker";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export const AuthModal: React.FC = () => {
   const {
@@ -35,18 +37,23 @@ export const AuthModal: React.FC = () => {
     openAuthModal,
     login,
     signup,
+    sendPhoneOtp,
     loginWithPhone,
     loginWithDemo,
   } = useAuth();
   const { setActivePersona, setLocation } = useWeather();
+  const { t } = useLanguage();
 
   const [tab, setTab] = useState<"signin" | "signup" | "otp">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
+  const [countryDial, setCountryDial] = useState("+91");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
   const [selectedPersona, setSelectedPersona] = useState<PersonaType>("health");
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("health_guard");
   const [city, setCity] = useState("Ghaziabad");
@@ -62,6 +69,15 @@ export const AuthModal: React.FC = () => {
     }
     setError(null);
   }, [authModalMode, isAuthModalOpen]);
+
+  // Resend countdown timer
+  React.useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => {
+      setResendTimer((t) => (t > 0 ? t - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   if (!isAuthModalOpen) return null;
 
@@ -112,14 +128,37 @@ export const AuthModal: React.FC = () => {
     }
   };
 
-  const handleSendOtp = () => {
+  const fullPhone = phone ? `${countryDial}${phone.replace(/\D/g, "")}` : "";
+
+  const handleSendOtp = async () => {
     if (!phone || phone.replace(/\D/g, "").length < 10) {
       setError("Please enter a valid 10-digit mobile number.");
       return;
     }
     setError(null);
-    setOtpSent(true);
-    setOtp("2607"); // Pre-filled default test OTP
+    setSendingOtp(true);
+    const result = await sendPhoneOtp(fullPhone);
+    if (result.success) {
+      setOtpSent(true);
+      setResendTimer(60);
+      setOtp("");
+    } else {
+      setError(result.error || "Failed to send OTP.");
+    }
+    setSendingOtp(false);
+  };
+
+  const handleResendOtp = async () => {
+    setError(null);
+    setSendingOtp(true);
+    const result = await sendPhoneOtp(fullPhone);
+    if (result.success) {
+      setResendTimer(60);
+      setOtp("");
+    } else {
+      setError(result.error || "Failed to resend OTP.");
+    }
+    setSendingOtp(false);
   };
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
@@ -127,7 +166,7 @@ export const AuthModal: React.FC = () => {
     setError(null);
     setLoading(true);
     try {
-      const res = await loginWithPhone(phone, otp);
+      const res = await loginWithPhone(fullPhone, otp);
       if (!res.success) {
         setError(res.error || "Invalid OTP code.");
       }
@@ -169,8 +208,8 @@ export const AuthModal: React.FC = () => {
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#0055A6] to-[#00DDE5] flex items-center justify-center mx-auto shadow-lg mb-2">
             <ShieldCheck className="w-7 h-7 text-white" />
           </div>
-          <h2 className="text-lg font-black text-white">IMD Citizen Weather Account</h2>
-          <p className="text-xs text-white/70">Sign in for personalized alerts, agromet & radar</p>
+          <h2 className="text-lg font-black text-white">{t("auth.imd_citizen_account")}</h2>
+          <p className="text-xs text-white/70">{t("auth.sign_in_for_alerts")}</p>
         </div>
 
         {/* Mode Switcher Tabs */}
@@ -182,7 +221,7 @@ export const AuthModal: React.FC = () => {
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
-            Sign In
+            {t("auth.sign_in")}
           </button>
           <button
             onClick={() => { setTab("signup"); setError(null); }}
@@ -191,7 +230,7 @@ export const AuthModal: React.FC = () => {
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
-            Register
+            {t("auth.register")}
           </button>
           <button
             onClick={() => { setTab("otp"); setError(null); }}
@@ -200,7 +239,7 @@ export const AuthModal: React.FC = () => {
             }`}
           >
             <Phone className="w-3.5 h-3.5" />
-            OTP Login
+            {t("auth.otp_login")}
           </button>
         </div>
 
@@ -216,7 +255,7 @@ export const AuthModal: React.FC = () => {
         {tab === "signin" && (
           <form onSubmit={handleSignIn} className="space-y-3">
             <div>
-              <label className="text-[11px] font-bold text-white/80 block mb-1">Email or Mobile</label>
+              <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.email_or_mobile")}</label>
               <div className="relative">
                 <Mail className="w-4 h-4 text-white/40 absolute left-3 top-3" />
                 <input
@@ -238,7 +277,7 @@ export const AuthModal: React.FC = () => {
                   onClick={() => alert("Password reset link sent to demo registered email.")}
                   className="text-[10px] text-[#00DDE5] hover:underline"
                 >
-                  Forgot Password?
+                  {t("auth.forgot_password")}
                 </button>
               </div>
               <div className="relative">
@@ -259,7 +298,7 @@ export const AuthModal: React.FC = () => {
               disabled={loading}
               className="w-full mt-2 py-3 rounded-2xl bg-gradient-to-r from-[#0055A6] to-[#00DDE5] hover:brightness-110 font-bold text-xs text-white shadow-lg flex items-center justify-center gap-2 active:scale-98 transition disabled:opacity-50"
             >
-              {loading ? "Signing in..." : "Sign In to Account"}
+              {loading ? t("auth.verifying") : t("auth.sign_in_to_account")}
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
@@ -269,7 +308,7 @@ export const AuthModal: React.FC = () => {
         {tab === "signup" && (
           <form onSubmit={handleSignUp} className="space-y-3">
             <div>
-              <label className="text-[11px] font-bold text-white/80 block mb-1">Full Name</label>
+              <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.full_name")}</label>
               <div className="relative">
                 <User className="w-4 h-4 text-white/40 absolute left-3 top-3" />
                 <input
@@ -307,7 +346,7 @@ export const AuthModal: React.FC = () => {
             </div>
 
             <div>
-              <label className="text-[11px] font-bold text-white/80 block mb-1">Home City / Station</label>
+              <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.home_city")}</label>
               <div className="relative">
                 <MapPin className="w-4 h-4 text-white/40 absolute left-3 top-3" />
                 <input
@@ -324,7 +363,7 @@ export const AuthModal: React.FC = () => {
             <div>
               <label className="text-[11px] font-bold text-white/80 block mb-1.5 flex items-center gap-1">
                 <Smile className="w-3.5 h-3.5 text-[#FFBE00]" />
-                Select Avatar
+                {t("auth.select_avatar")}
               </label>
               <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 {AVATAR_PRESETS.slice(0, 7).map((preset) => {
@@ -351,7 +390,7 @@ export const AuthModal: React.FC = () => {
             {/* Persona Selector */}
             <div>
               <label className="text-[11px] font-bold text-white/80 block mb-1.5">
-                Select Your Weather Persona
+                {t("auth.select_persona")}
               </label>
               <div className="grid grid-cols-2 gap-1.5">
                 {personaChoices.map((p) => (
@@ -386,7 +425,7 @@ export const AuthModal: React.FC = () => {
               disabled={loading}
               className="w-full mt-2 py-3 rounded-2xl bg-gradient-to-r from-[#8ED329] to-[#00DDE5] hover:brightness-110 font-bold text-xs text-[#06345C] shadow-lg flex items-center justify-center gap-2 active:scale-98 transition disabled:opacity-50"
             >
-              {loading ? "Creating Profile..." : "Create Account & Start"}
+              {loading ? t("auth.creating_profile") : t("auth.create_account")}
               <CheckCircle2 className="w-4 h-4" />
             </button>
           </form>
@@ -396,16 +435,22 @@ export const AuthModal: React.FC = () => {
         {tab === "otp" && (
           <div className="space-y-3">
             <div>
-              <label className="text-[11px] font-bold text-white/80 block mb-1">Mobile Number</label>
-              <div className="relative">
-                <Phone className="w-4 h-4 text-white/40 absolute left-3 top-3" />
+              <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.mobile_number")}</label>
+              <div className="flex">
+                <CountryCodePicker
+                  value={countryDial}
+                  onChange={(dial) => setCountryDial(dial)}
+                  disabled={otpSent}
+                />
                 <input
                   type="tel"
-                  placeholder="+91 98765 43210"
+                  inputMode="numeric"
+                  placeholder="98765 43210"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ""))}
                   disabled={otpSent}
-                  className="w-full bg-white/10 border border-white/20 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5] disabled:opacity-60"
+                  maxLength={15}
+                  className="flex-1 bg-white/10 border border-l-0 border-white/20 rounded-r-xl px-3 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5] disabled:opacity-60 font-mono"
                 />
               </div>
             </div>
@@ -414,46 +459,83 @@ export const AuthModal: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSendOtp}
-                className="w-full py-2.5 rounded-2xl bg-[#0055A6] hover:bg-[#004586] text-white font-bold text-xs shadow transition flex items-center justify-center gap-2"
+                disabled={sendingOtp}
+                className="w-full py-2.5 rounded-2xl bg-[#0055A6] hover:bg-[#004586] text-white font-bold text-xs shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Send Verification OTP
+                {sendingOtp ? (
+                  <>
+                    <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Sending OTP...
+                  </>
+                ) : (
+                  <>{t("auth.send_otp")}</>
+                )}
               </button>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-3 animate-fade-in">
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-[11px] font-bold text-white/80">Enter 4-Digit OTP</label>
-                    <span className="text-[10px] text-[#8ED329]">Code sent to {phone}</span>
+                    <label className="text-[11px] font-bold text-white/80">{t("auth.enter_otp")}</label>
+                    <span className="text-[10px] text-[#8ED329]">Code sent to {fullPhone}</span>
                   </div>
                   <input
                     type="text"
+                    inputMode="numeric"
                     maxLength={6}
-                    placeholder="2607"
+                    placeholder="••••••"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                     className="w-full text-center tracking-[0.4em] font-mono text-lg bg-white/10 border border-[#00DDE5] rounded-xl py-2 text-white focus:outline-none"
+                    autoFocus
                   />
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#0055A6] to-[#00DDE5] font-bold text-xs text-white shadow transition flex items-center justify-center gap-2"
+                  disabled={loading || otp.length < 6}
+                  className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#0055A6] to-[#00DDE5] font-bold text-xs text-white shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  {loading ? "Verifying..." : "Verify & Sign In"}
+                  {loading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>{t("auth.verify_sign_in")}</>
+                  )}
                 </button>
+
+                {/* Resend OTP */}
+                <div className="text-center">
+                  {resendTimer > 0 ? (
+                    <p className="text-[10px] text-white/50">
+                      Resend OTP in <span className="font-bold text-[#00DDE5]">{resendTimer}s</span>
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
+                      disabled={sendingOtp}
+                      className="text-[10px] text-[#00DDE5] hover:underline font-bold"
+                    >
+                      {sendingOtp ? t("auth.sending_otp") : t("auth.resend_otp")}
+                    </button>
+                  )}
+                </div>
 
                 <button
                   type="button"
-                  onClick={() => setOtpSent(false)}
+                  onClick={() => { setOtpSent(false); setOtp(""); setResendTimer(0); }}
                   className="w-full text-center text-[10px] text-white/60 hover:text-white underline"
                 >
-                  Change phone number
+                  {t("auth.change_phone")}
                 </button>
               </form>
             )}
           </div>
         )}
+
+        <div id="recaptcha-container" />
 
         {/* QUICK 1-CLICK DEMO ACCOUNTS */}
         <div className="mt-5 pt-3 border-t border-white/15">

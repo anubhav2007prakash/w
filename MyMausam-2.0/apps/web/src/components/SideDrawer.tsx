@@ -46,6 +46,8 @@ import {
   ShieldCheck,
   Camera,
   Smile,
+  Activity,
+  Bike,
 } from "lucide-react";
 import { useWeather } from "@/context/WeatherContext";
 import { useAuth } from "@/context/AuthContext";
@@ -261,6 +263,39 @@ export const SideDrawer: React.FC = () => {
           icon: <CalendarCheck className="w-5 h-5 text-[#0055A6]" />,
           label: "Activity & Event Planner",
           path: "/activity-planner",
+        },
+      ],
+    },
+    {
+      id: "energy",
+      label: "Energy & Carbon",
+      icon: <Zap className="w-4 h-4" />,
+      accent: "bg-amber-50 border-amber-100",
+      items: [
+        {
+          icon: <Zap className="w-5 h-5 text-[#FFBE00]" />,
+          label: "Weather × Energy Correlation",
+          path: "/energy-impact",
+        },
+        {
+          icon: <Droplets className="w-5 h-5 text-[#38bdf8]" />,
+          label: "Flood Impact on Energy Grid",
+          path: "/energy-impact",
+        },
+        {
+          icon: <Leaf className="w-5 h-5 text-[#22c55e]" />,
+          label: "Daily Carbon Footprint",
+          path: "/carbon-tracker",
+        },
+        {
+          icon: <Activity className="w-5 h-5 text-[#a78bfa]" />,
+          label: "Carbon Dashboard & Leaderboard",
+          path: "/carbon-tracker",
+        },
+        {
+          icon: <Sun className="w-5 h-5 text-[#FFBE00]" />,
+          label: "Climate-Energy Trends",
+          path: "/energy-impact",
         },
       ],
     },

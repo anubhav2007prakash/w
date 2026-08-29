@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { UserProfile, AuthCredentials, AuthContextType } from "@/types/auth";
-import { PersonaType } from "@/types/weather";
+import { sendOtp, verifyOtp } from "@/lib/phone-auth";
 
 const STORAGE_KEY = "mausam_auth_user";
 
@@ -186,19 +186,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { success: true };
   }, []);
 
+  const sendPhoneOtp = useCallback(async (phone: string) => {
+    if (!phone || phone.replace(/\D/g, "").length < 10) {
+      return { success: false, error: "Please enter a valid 10-digit mobile number." };
+    }
+    return sendOtp(phone);
+  }, []);
+
   const loginWithPhone = useCallback(async (phone: string, otp: string) => {
     setIsLoading(true);
-    await new Promise((res) => setTimeout(res, 500));
 
     if (!phone || otp.length < 4) {
       setIsLoading(false);
-      return { success: false, error: "Please enter a valid 4-digit OTP." };
+      return { success: false, error: "Please enter a valid OTP code." };
     }
 
+    const result = await verifyOtp(otp);
+    if (!result.success) {
+      setIsLoading(false);
+      return { success: false, error: result.error || "OTP verification failed." };
+    }
+
+    const firebaseUser = result.user;
+    const phoneClean = phone.replace(/\D/g, "");
     const phoneUser: UserProfile = {
-      id: `usr-ph-${phone.replace(/\D/g, "")}`,
-      name: `User ${phone.slice(-4)}`,
-      email: `${phone.replace(/\D/g, "")}@mobile.imd.gov.in`,
+      id: `usr-ph-${firebaseUser?.uid?.slice(0, 12) || phoneClean.slice(-10)}`,
+      name: firebaseUser?.displayName || `User ${phone.slice(-4)}`,
+      email: firebaseUser?.email || `${phoneClean}@mobile.mausam.gov.in`,
       phone: phone,
       role: "citizen",
       persona: "farmer",
@@ -264,6 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         closeAuthModal,
         login,
         signup,
+        sendPhoneOtp,
         loginWithPhone,
         loginWithDemo,
         logout,

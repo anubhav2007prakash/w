@@ -20,6 +20,7 @@ import {
 import { CurrentWeather } from "@/types/weather";
 import { useWeather } from "@/context/WeatherContext";
 import { WindCompass } from "@/components/WindCompass";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface WeatherHeroProps {
   weather: CurrentWeather;
@@ -27,6 +28,7 @@ interface WeatherHeroProps {
 
 export const WeatherHero: React.FC<WeatherHeroProps> = ({ weather }) => {
   const { tempUnit, toggleTempUnit, formatTemp, isSpeaking, speakWeatherForecast } = useWeather();
+  const { t } = useLanguage();
 
   const getWeatherIcon = (iconName: string, condition: string) => {
     const c = condition.toLowerCase();
@@ -50,7 +52,7 @@ export const WeatherHero: React.FC<WeatherHeroProps> = ({ weather }) => {
           <div className="flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-full border border-white/10">
             <span className="w-2 h-2 rounded-full bg-[#8ED329] animate-pulse" />
             <span className="text-[10px] font-bold text-white uppercase tracking-wider">
-              Live Observation
+              {t("weather.live_observation")}
             </span>
           </div>
 
@@ -79,11 +81,11 @@ export const WeatherHero: React.FC<WeatherHeroProps> = ({ weather }) => {
             </div>
 
             <div className="flex items-center gap-2 text-xs text-white/80">
-              <span>Feels like {formatTemp(weather.feels_like)}</span>
+              <span>{t("weather.feels_like")} {formatTemp(weather.feels_like)}</span>
               <span>•</span>
-              <span className="text-[#8ED329] font-bold">Max {formatTemp(weather.maximum)}</span>
+              <span className="text-[#8ED329] font-bold">{t("weather.max")} {formatTemp(weather.maximum)}</span>
               <span>/</span>
-              <span className="text-white/70">Min {formatTemp(weather.minimum)}</span>
+              <span className="text-white/70">{t("weather.min")} {formatTemp(weather.minimum)}</span>
             </div>
 
             <div className="pt-1">
@@ -91,7 +93,7 @@ export const WeatherHero: React.FC<WeatherHeroProps> = ({ weather }) => {
                 {weather.condition}
               </span>
               <span className="text-[11px] text-white/60 block mt-0.5">
-                Updated: {weather.updated_at}
+                {t("weather.updated")}: {weather.updated_at}
               </span>
             </div>
           </div>
@@ -113,25 +115,25 @@ export const WeatherHero: React.FC<WeatherHeroProps> = ({ weather }) => {
         <div className="grid grid-cols-4 gap-2 text-center text-xs">
           <div className="bg-white/5 p-2 rounded-2xl border border-white/5">
             <Droplets className="w-4 h-4 mx-auto text-[#00DDE5] mb-1" />
-            <span className="text-[9px] text-white/60 block">Humidity</span>
+            <span className="text-[9px] text-white/60 block">{t("weather.humidity")}</span>
             <strong className="text-white text-xs block">{weather.humidity}%</strong>
           </div>
 
           <div className="bg-white/5 p-2 rounded-2xl border border-white/5">
             <Sun className="w-4 h-4 mx-auto text-[#FFBE00] mb-1" />
-            <span className="text-[9px] text-white/60 block">UV Index</span>
+            <span className="text-[9px] text-white/60 block">{t("weather.uvi")}</span>
             <strong className="text-white text-xs block">{weather.uv_index?.toFixed(1) || "7.2"}</strong>
           </div>
 
           <div className="bg-white/5 p-2 rounded-2xl border border-white/5">
             <Eye className="w-4 h-4 mx-auto text-blue-200 mb-1" />
-            <span className="text-[9px] text-white/60 block">Visibility</span>
+            <span className="text-[9px] text-white/60 block">{t("weather.visibility")}</span>
             <strong className="text-white text-xs block">{weather.visibility_km?.toFixed(1) || "6.0"} km</strong>
           </div>
 
           <div className="bg-white/5 p-2 rounded-2xl border border-white/5">
             <Gauge className="w-4 h-4 mx-auto text-[#8ED329] mb-1" />
-            <span className="text-[9px] text-white/60 block">Pressure</span>
+            <span className="text-[9px] text-white/60 block">{t("weather.pressure")}</span>
             <strong className="text-white text-xs block">{weather.pressure_hpa?.toFixed(0) || "1004"} hPa</strong>
           </div>
         </div>

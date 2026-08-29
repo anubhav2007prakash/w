@@ -24,8 +24,11 @@ import {
   Plane,
   ChevronDown,
   ChevronUp,
+  Leaf,
+  Activity,
 } from "lucide-react";
 import { MausamMitraModal } from "@/components/MausamMitraModal";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface FeatureItem {
   title: string;
@@ -44,73 +47,89 @@ interface FeatureCategory {
   features: FeatureItem[];
 }
 
-const CATEGORIES: FeatureCategory[] = [
-  {
-    id: "alerts",
-    label: "Weather Alerts & Extremes",
-    emoji: "🚨",
-    accentColor: "#FF4444",
-    features: [
-      { title: "Heat Wave & Cold Wave", subtitle: "IMD Thermal Alerts", icon: Thermometer, href: "/heatwave", color: "#FF7400", bgColor: "rgba(255,116,0,0.15)" },
-      { title: "Lightning Alarm", subtitle: "Flash-to-Bang Radar", icon: Zap, href: "/lightning-alarm", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
-      { title: "Urban Flood Nowcast", subtitle: "City Inundation Map", icon: Droplets, href: "/flood", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
-      { title: "Winter Fog", subtitle: "Visibility & Highway Fog", icon: Eye, href: "/winter-fog", color: "#94a3b8", bgColor: "rgba(148,163,184,0.15)" },
-      { title: "Cyclone Tracker", subtitle: "Bay of Bengal & Arabian Sea", icon: CloudRain, href: "/cyclone", color: "#a78bfa", bgColor: "rgba(167,139,250,0.15)" },
-    ],
-  },
-  {
-    id: "climate",
-    label: "Climate & Monsoon",
-    emoji: "🌧️",
-    accentColor: "#00DDE5",
-    features: [
-      { title: "Monsoon Tracker", subtitle: "Departure vs LPA Normals", icon: CloudRain, href: "/monsoon-tracker", color: "#00DDE5", bgColor: "rgba(0,221,229,0.15)" },
-      { title: "Seasonal Outlook", subtitle: "3-Month IMD Prediction", icon: TrendingUp, href: "/seasonal-outlook", color: "#8ED329", bgColor: "rgba(142,211,41,0.15)" },
-      { title: "Radar & Satellite", subtitle: "Doppler dBZ & INSAT-3D", icon: Radio, href: "/radar", color: "#a78bfa", bgColor: "rgba(167,139,250,0.15)" },
-      { title: "Air Quality (SAFAR)", subtitle: "PM2.5, NO₂, Ozone & more", icon: Wind, href: "/air-quality", color: "#c084fc", bgColor: "rgba(192,132,252,0.15)" },
-    ],
-  },
-  {
-    id: "health",
-    label: "Health & Human Impact",
-    emoji: "🏥",
-    accentColor: "#f472b6",
-    features: [
-      { title: "Health & Allergy Index", subtitle: "Pollen, WBGT, Migraine", icon: HeartPulse, href: "/health-index", color: "#f472b6", bgColor: "rgba(244,114,182,0.15)" },
-      { title: "Activity Go/No-Go", subtitle: "Sport, Event & Work Planner", icon: CalendarCheck, href: "/activity-planner", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
-      { title: "Highway Route Weather", subtitle: "Waypoint Hazard Radar", icon: Navigation, href: "/route-navigator", color: "#8ED329", bgColor: "rgba(142,211,41,0.15)" },
-    ],
-  },
-  {
-    id: "agri",
-    label: "Agriculture & Rural",
-    emoji: "🌾",
-    accentColor: "#8ED329",
-    features: [
-      { title: "Agromet & Crop Disease", subtitle: "Pathogen Risk & Spray Window", icon: Sprout, href: "/agromet", color: "#8ED329", bgColor: "rgba(142,211,41,0.15)" },
-      { title: "Solar Yield Estimator", subtitle: "Rooftop kWh & Savings", icon: Sun, href: "/solar-estimator", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
-      { title: "Citizen Science", subtitle: "Cloud Classifier & Leaderboard", icon: Trophy, href: "/citizen-leaderboard", color: "#34d399", bgColor: "rgba(52,211,153,0.15)" },
-    ],
-  },
-  {
-    id: "marine",
-    label: "Marine, Coast & Mountains",
-    emoji: "🌊",
-    accentColor: "#38bdf8",
-    features: [
-      { title: "Marine & Fishermen", subtitle: "Wave Height & PFZ Zones", icon: Waves, href: "/marine", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
-      { title: "Himalayan Weather", subtitle: "Pass Status & Avalanche Risk", icon: Mountain, href: "/mountain-weather", color: "#cbd5e1", bgColor: "rgba(203,213,225,0.15)" },
-      { title: "Aviation METAR/TAF", subtitle: "Airport Weather Briefing", icon: Plane, href: "/aviation", color: "#a78bfa", bgColor: "rgba(167,139,250,0.15)" },
-    ],
-  },
-];
+function getCategories(t: (k: string) => string): FeatureCategory[] {
+  return [
+    {
+      id: "alerts",
+      label: t("features.alerts_extremes"),
+      emoji: "🚨",
+      accentColor: "#FF4444",
+      features: [
+        { title: t("features.heat_cold_wave"), subtitle: t("features.heat_cold_sub"), icon: Thermometer, href: "/heatwave", color: "#FF7400", bgColor: "rgba(255,116,0,0.15)" },
+        { title: t("features.lightning_alarm"), subtitle: t("features.lightning_sub"), icon: Zap, href: "/lightning-alarm", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
+        { title: t("features.urban_flood"), subtitle: t("features.urban_flood_sub"), icon: Droplets, href: "/flood", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
+        { title: t("features.winter_fog"), subtitle: t("features.winter_fog_sub"), icon: Eye, href: "/winter-fog", color: "#94a3b8", bgColor: "rgba(148,163,184,0.15)" },
+        { title: t("features.cyclone_tracker"), subtitle: t("features.cyclone_sub"), icon: CloudRain, href: "/cyclone", color: "#a78bfa", bgColor: "rgba(167,139,250,0.15)" },
+      ],
+    },
+    {
+      id: "climate",
+      label: t("features.climate_monsoon"),
+      emoji: "🌧️",
+      accentColor: "#00DDE5",
+      features: [
+        { title: t("features.monsoon_tracker"), subtitle: t("features.monsoon_sub"), icon: CloudRain, href: "/monsoon-tracker", color: "#00DDE5", bgColor: "rgba(0,221,229,0.15)" },
+        { title: t("features.seasonal_outlook"), subtitle: t("features.seasonal_sub"), icon: TrendingUp, href: "/seasonal-outlook", color: "#8ED329", bgColor: "rgba(142,211,41,0.15)" },
+        { title: t("features.radar_satellite"), subtitle: t("features.radar_sub"), icon: Radio, href: "/radar", color: "#a78bfa", bgColor: "rgba(167,139,250,0.15)" },
+        { title: t("features.air_quality"), subtitle: t("features.air_quality_sub"), icon: Wind, href: "/air-quality", color: "#c084fc", bgColor: "rgba(192,132,252,0.15)" },
+      ],
+    },
+    {
+      id: "health",
+      label: t("features.health_impact"),
+      emoji: "🏥",
+      accentColor: "#f472b6",
+      features: [
+        { title: t("features.health_allergy"), subtitle: t("features.health_allergy_sub"), icon: HeartPulse, href: "/health-index", color: "#f472b6", bgColor: "rgba(244,114,182,0.15)" },
+        { title: t("features.activity_planner"), subtitle: t("features.activity_sub"), icon: CalendarCheck, href: "/activity-planner", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
+        { title: t("features.highway_route"), subtitle: t("features.highway_sub"), icon: Navigation, href: "/route-navigator", color: "#8ED329", bgColor: "rgba(142,211,41,0.15)" },
+      ],
+    },
+    {
+      id: "agri",
+      label: t("features.agri_rural"),
+      emoji: "🌾",
+      accentColor: "#8ED329",
+      features: [
+        { title: t("features.agromet_crop"), subtitle: t("features.agromet_sub"), icon: Sprout, href: "/agromet", color: "#8ED329", bgColor: "rgba(142,211,41,0.15)" },
+        { title: t("features.solar_yield"), subtitle: t("features.solar_sub"), icon: Sun, href: "/solar-estimator", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
+        { title: t("features.citizen_science"), subtitle: t("features.citizen_sub"), icon: Trophy, href: "/citizen-leaderboard", color: "#34d399", bgColor: "rgba(52,211,153,0.15)" },
+      ],
+    },
+    {
+      id: "marine",
+      label: t("features.marine_coast"),
+      emoji: "🌊",
+      accentColor: "#38bdf8",
+      features: [
+        { title: t("features.marine_fishermen"), subtitle: t("features.marine_sub"), icon: Waves, href: "/marine", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
+        { title: t("features.himalayan_weather"), subtitle: t("features.himalayan_sub"), icon: Mountain, href: "/mountain-weather", color: "#cbd5e1", bgColor: "rgba(203,213,225,0.15)" },
+        { title: t("features.aviation_metar"), subtitle: t("features.aviation_sub"), icon: Plane, href: "/aviation", color: "#a78bfa", bgColor: "rgba(167,139,250,0.15)" },
+      ],
+    },
+    {
+      id: "energy",
+      label: t("features.energy_carbon"),
+      emoji: "⚡",
+      accentColor: "#FFBE00",
+      features: [
+        { title: t("features.energy_weather"), subtitle: t("features.energy_weather_sub"), icon: Zap, href: "/energy-impact", color: "#FFBE00", bgColor: "rgba(255,190,0,0.15)" },
+        { title: t("features.carbon_tracker"), subtitle: t("features.carbon_tracker_sub"), icon: Leaf, href: "/carbon-tracker", color: "#22c55e", bgColor: "rgba(34,197,94,0.15)" },
+        { title: t("features.flood_energy"), subtitle: t("features.flood_energy_sub"), icon: Activity, href: "/energy-impact#flood", color: "#38bdf8", bgColor: "rgba(56,189,248,0.15)" },
+      ],
+    },
+  ];
+}
 
 export const FeatureButtons: React.FC = () => {
   const router = useRouter();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const { t } = useLanguage();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(["alerts", "climate"])
   );
+
+  const CATEGORIES = getCategories(t);
 
   const toggleCategory = (id: string) => {
     setExpandedCategories((prev) => {
@@ -140,19 +159,19 @@ export const FeatureButtons: React.FC = () => {
             </div>
             <div className="text-left">
               <span className="text-sm font-black text-white block leading-tight">
-                Ask Mausam Mitra AI
+                {t("features.ask_mausam_mitra")}
                 <span className="ml-1.5 bg-[#FFBE00] text-black text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase">
-                  Voice
+                  {t("common.voice")}
                 </span>
               </span>
               <span className="text-[11px] text-white/80 font-medium block leading-tight mt-0.5">
-                Weather & Farming Copilot · English / Hindi
+                {t("features.weather_farming_copilot")}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-1 text-xs font-bold bg-white/20 px-3 py-1.5 rounded-full shrink-0">
             <Sparkles className="w-3.5 h-3.5 text-[#FFBE00]" />
-            <span>Chat</span>
+            <span>{t("features.chat_btn")}</span>
           </div>
         </button>
 

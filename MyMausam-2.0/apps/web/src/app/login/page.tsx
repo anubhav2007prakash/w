@@ -17,19 +17,34 @@ import {
   HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { CountryCodePicker } from "@/components/CountryCodePicker";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loginWithPhone, loginWithDemo, isAuthenticated, user, logout } = useAuth();
+  const { login, sendPhoneOtp, loginWithPhone, loginWithDemo, isAuthenticated, user, logout } = useAuth();
+  const { t } = useLanguage();
 
   const [mode, setMode] = useState<"password" | "otp">("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [countryDial, setCountryDial] = useState("+91");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [resendTimer, setResendTimer] = useState(0);
+
+  // Resend countdown timer
+  React.useEffect(() => {
+    if (resendTimer <= 0) return;
+    const interval = setInterval(() => {
+      setResendTimer((t) => (t > 0 ? t - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendTimer]);
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,12 +64,14 @@ export default function LoginPage() {
     }
   };
 
+  const fullPhone = phone ? `${countryDial}${phone.replace(/\D/g, "")}` : "";
+
   const handleOtpLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      const res = await loginWithPhone(phone, otp);
+      const res = await loginWithPhone(fullPhone, otp);
       if (res.success) {
         router.push("/");
       } else {
@@ -76,7 +93,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] pb-24 select-none">
-      <Header showBack={true} title="Citizen Login" subtitle="IMD National Weather Services" />
+      <Header showBack={true} title={t("auth.sign_in")} subtitle="IMD National Weather Services" />
 
       <div className="p-4 max-w-[420px] mx-auto space-y-4">
         {/* If already logged in */}
@@ -86,9 +103,9 @@ export default function LoginPage() {
               <UserCheck className="w-8 h-8" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-white">Already Signed In</h2>
+              <h2 className="text-lg font-bold text-white">{t("auth.already_signed_in")}</h2>
               <p className="text-xs text-white/70 mt-1">
-                You are currently logged in as <span className="font-bold text-[#00DDE5]">{user.name}</span> ({user.role})
+                {t("auth.you_are_logged_in")} <span className="font-bold text-[#00DDE5]">{user.name}</span> ({user.role})
               </p>
             </div>
             <div className="flex gap-2 pt-2">
@@ -96,20 +113,20 @@ export default function LoginPage() {
                 onClick={() => router.push("/profile")}
                 className="flex-1 py-2.5 rounded-2xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs transition border border-white/20"
               >
-                View Profile
+                {t("auth.view_profile")}
               </button>
               <button
                 onClick={() => router.push("/")}
                 className="flex-1 py-2.5 rounded-2xl bg-[#00DDE5] text-[#06345C] font-bold text-xs transition shadow-md"
               >
-                Go to Home
+                {t("auth.go_to_home")}
               </button>
             </div>
             <button
               onClick={logout}
               className="text-xs text-red-300 hover:text-red-200 underline pt-2 block mx-auto"
             >
-              Sign out from this device
+              {t("auth.sign_out_device")}
             </button>
           </div>
         ) : (
@@ -121,8 +138,8 @@ export default function LoginPage() {
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-base font-black text-white">Sign In to Mausam 2.0</h2>
-                  <p className="text-[11px] text-white/70">Access localized forecasts & alerts</p>
+                  <h2 className="text-base font-black text-white">{t("auth.sign_in_to_account")}</h2>
+                  <p className="text-[11px] text-white/70">{t("auth.access_forecasts")}</p>
                 </div>
               </div>
 
@@ -135,7 +152,7 @@ export default function LoginPage() {
                     mode === "password" ? "bg-[#0055A6] text-white shadow" : "text-white/70 hover:text-white"
                   }`}
                 >
-                  Email / Password
+                  {t("auth.email_password")}
                 </button>
                 <button
                   type="button"
@@ -144,7 +161,7 @@ export default function LoginPage() {
                     mode === "otp" ? "bg-[#0055A6] text-white shadow" : "text-white/70 hover:text-white"
                   }`}
                 >
-                  Mobile OTP
+                  {t("auth.mobile_otp")}
                 </button>
               </div>
 
@@ -160,7 +177,7 @@ export default function LoginPage() {
               {mode === "password" && (
                 <form onSubmit={handlePasswordLogin} className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-white/80 block mb-1">Email ID</label>
+                    <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.email_id")}</label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-white/40 absolute left-3 top-3" />
                       <input
@@ -175,7 +192,7 @@ export default function LoginPage() {
                   </div>
 
                   <div>
-                    <label className="text-[11px] font-bold text-white/80 block mb-1">Password</label>
+                    <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.password")}</label>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-white/40 absolute left-3 top-3" />
                       <input
@@ -194,7 +211,7 @@ export default function LoginPage() {
                     disabled={loading}
                     className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#0055A6] to-[#00DDE5] font-bold text-xs text-white shadow-lg flex items-center justify-center gap-2 hover:brightness-110 active:scale-98 transition disabled:opacity-50"
                   >
-                    {loading ? "Verifying..." : "Sign In"}
+                    {loading ? t("auth.verifying") : t("auth.sign_in_btn")}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </form>
@@ -204,16 +221,22 @@ export default function LoginPage() {
               {mode === "otp" && (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[11px] font-bold text-white/80 block mb-1">Mobile Number</label>
-                    <div className="relative">
-                      <Phone className="w-4 h-4 text-white/40 absolute left-3 top-3" />
+                    <label className="text-[11px] font-bold text-white/80 block mb-1">{t("auth.mobile_number")}</label>
+                    <div className="flex">
+                      <CountryCodePicker
+                        value={countryDial}
+                        onChange={(dial) => setCountryDial(dial)}
+                        disabled={otpSent}
+                      />
                       <input
                         type="tel"
-                        placeholder="+91 98765 43210"
+                        inputMode="numeric"
+                        placeholder="98765 43210"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => setPhone(e.target.value.replace(/[^\d]/g, ""))}
                         disabled={otpSent}
-                        className="w-full bg-white/10 border border-white/20 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5] disabled:opacity-60"
+                        maxLength={15}
+                        className="flex-1 bg-white/10 border border-l-0 border-white/20 rounded-r-xl px-3 py-2.5 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5] disabled:opacity-60 font-mono"
                       />
                     </div>
                   </div>
@@ -221,53 +244,109 @@ export default function LoginPage() {
                   {!otpSent ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (phone.replace(/\D/g, "").length >= 10) {
-                          setOtpSent(true);
-                          setOtp("2607");
-                        } else {
+                      onClick={async () => {
+                        setError(null);
+                        if (phone.replace(/\D/g, "").length < 10) {
                           setError("Please enter a valid 10-digit mobile number.");
+                          return;
                         }
+                        setSendingOtp(true);
+                        const result = await sendPhoneOtp(fullPhone);
+                        if (result.success) {
+                          setOtpSent(true);
+                          setResendTimer(60);
+                          setOtp("");
+                        } else {
+                          setError(result.error || "Failed to send OTP.");
+                        }
+                        setSendingOtp(false);
                       }}
-                      className="w-full py-2.5 rounded-2xl bg-[#0055A6] hover:bg-[#004586] text-white font-bold text-xs shadow transition flex items-center justify-center gap-2"
+                      disabled={sendingOtp}
+                      className="w-full py-2.5 rounded-2xl bg-[#0055A6] hover:bg-[#004586] text-white font-bold text-xs shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
                     >
-                      Send OTP Code
+                      {sendingOtp ? (
+                        <>
+                          <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Sending OTP...
+                        </>
+                      ) : (
+                        <>                      {t("auth.send_otp")}</>
+                      )}
                     </button>
                   ) : (
                     <form onSubmit={handleOtpLogin} className="space-y-3 animate-fade-in">
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <label className="text-[11px] font-bold text-white/80">Enter OTP Code</label>
-                          <span className="text-[10px] text-[#8ED329]">Sent to {phone}</span>
+                          <label className="text-[11px] font-bold text-white/80">{t("auth.enter_otp")}</label>
+                          <span className="text-[10px] text-[#8ED329]">Sent to {fullPhone}</span>
                         </div>
                         <input
                           type="text"
+                          inputMode="numeric"
                           maxLength={6}
-                          placeholder="2607"
+                          placeholder="••••••"
                           value={otp}
-                          onChange={(e) => setOtp(e.target.value)}
+                          onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                           className="w-full text-center tracking-[0.4em] font-mono text-lg bg-white/10 border border-[#00DDE5] rounded-xl py-2 text-white focus:outline-none"
+                          autoFocus
                         />
                       </div>
 
                       <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#0055A6] to-[#00DDE5] font-bold text-xs text-white shadow transition flex items-center justify-center gap-2"
+                        disabled={loading || otp.length < 6}
+                        className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-[#0055A6] to-[#00DDE5] font-bold text-xs text-white shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
                       >
-                        {loading ? "Verifying..." : "Verify & Sign In"}
+                        {loading ? (
+                          <>
+                            <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            Verifying...
+                          </>
+                        ) : (                            <>{t("auth.verify_sign_in")}</>
+                        )}
                       </button>
+
+                      {/* Resend OTP */}
+                      <div className="text-center">
+                        {resendTimer > 0 ? (
+                          <p className="text-[10px] text-white/50">
+                            Resend OTP in <span className="font-bold text-[#00DDE5]">{resendTimer}s</span>
+                          </p>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              setError(null);
+                              setSendingOtp(true);
+                              const result = await sendPhoneOtp(fullPhone);
+                              if (result.success) {
+                                setResendTimer(60);
+                                setOtp("");
+                              } else {
+                                setError(result.error || "Failed to resend OTP.");
+                              }
+                              setSendingOtp(false);
+                            }}
+                            disabled={sendingOtp}
+                            className="text-[10px] text-[#00DDE5] hover:underline font-bold"
+                          >
+                            {sendingOtp ? t("auth.sending_otp") : t("auth.resend_otp")}
+                          </button>
+                        )}
+                      </div>
                     </form>
                   )}
                 </div>
               )}
 
+              <div id="recaptcha-container" />
+
               {/* Registration Link */}
               <div className="pt-2 text-center">
                 <p className="text-xs text-white/70">
-                  Don't have an account?{" "}
+                  {t("auth.dont_have_account")}{" "}
                   <Link href="/signup" className="text-[#00DDE5] font-bold hover:underline">
-                    Sign Up / Register
+                    {t("auth.sign_up_register")}
                   </Link>
                 </p>
               </div>

@@ -6,6 +6,7 @@ import { WeatherHero } from "@/components/WeatherHero";
 import { AQICard } from "@/components/AQICard";
 import { PersonaEngine } from "@/components/PersonaEngine";
 import { FeatureButtons } from "@/components/FeatureButtons";
+import { LifestyleIndex } from "@/components/LifestyleIndex";
 import { WeatherAlertCard } from "@/components/WeatherAlertCard";
 import { DailyForecastList } from "@/components/DailyForecastList";
 import { LoadingState } from "@/components/LoadingState";
@@ -58,6 +59,9 @@ export default function HomePage() {
           <div className="space-y-1.5 animate-fade-in pt-1">
             {/* Current Weather Hero + 3D Wind Compass */}
             <WeatherHero weather={currentWeather} />
+
+            {/* Lifestyle Indices — Heatstroke, UV, AC Usage */}
+            <LifestyleIndex weather={currentWeather} />
 
             {/* SIH 26076 AI Persona Engine (8 Personas with specialized telemetry widgets) */}
             <PersonaEngine />

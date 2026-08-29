@@ -1,10 +1,26 @@
 import datetime
+import random
+import time
 from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException, Query, Body
 from pydantic import BaseModel
 
 from app.database import query_all, query_one, execute_write
 from app.services import weather_service
+
+# ── In-memory OTP store (phone → {code, expires_at}) ──────────────
+_otp_store: Dict[str, Dict[str, Any]] = {}
+OTP_TTL_SECONDS = 300  # 5 minutes
+OTP_LENGTH = 6
+
+
+class SendOtpRequest(BaseModel):
+    phone: str
+
+
+class VerifyOtpRequest(BaseModel):
+    phone: str
+    otp: str
 
 api_router = APIRouter(prefix="/api")
 
@@ -250,6 +266,59 @@ def get_settings():
         "push_notifications": True,
         "auto_location": True
     }
+
+
+# ── Auth: Phone OTP Endpoints ─────────────────────────────────────
+@api_router.post("/auth/send-otp")
+def send_otp(body: SendOtpRequest):
+    phone = body.phone.strip()
+    if not phone or len(phone.replace(" ", "")) < 10:
+        raise HTTPException(status_code=400, detail="Invalid phone number")
+
+    # Generate numeric OTP
+    code = "".join([str(random.randint(0, 9)) for _ in range(OTP_LENGTH)])
+    _otp_store[phone] = {
+        "code": code,
+        "expires_at": time.time() + OTP_TTL_SECONDS,
+    }
+
+    # ─── LOG OTP TO SERVER CONSOLE (replace with Twilio/MSG91 later) ───
+    print(f"\n{'='*50}")
+    print(f"  📱 OTP for {phone}: {code}")
+    print(f"  ⏱  Expires in {OTP_TTL_SECONDS // 60} minutes")
+    print(f"{'='*50}\n")
+
+    return {
+        "success": True,
+        "message": f"OTP sent to {phone}",
+        # In dev mode, include OTP in response so you can see it in browser
+        "dev_otp": code,
+    }
+
+
+@api_router.post("/auth/verify-otp")
+def verify_otp(body: VerifyOtpRequest):
+    phone = body.phone.strip()
+    otp_code = body.otp.strip()
+
+    stored = _otp_store.get(phone)
+    if not stored:
+        raise HTTPException(status_code=400, detail="No OTP sent to this number. Please request a new code.")
+
+    if time.time() > stored["expires_at"]:
+        del _otp_store[phone]
+        raise HTTPException(status_code=400, detail="OTP has expired. Please request a new code.")
+
+    if stored["code"] != otp_code:
+        raise HTTPException(status_code=400, detail="Incorrect OTP. Please try again.")
+
+    # OTP verified — remove from store
+    del _otp_store[phone]
+    return {
+        "success": True,
+        "message": "Phone number verified successfully",
+    }
+
 
 @api_router.put("/settings")
 def update_settings(update: UserSettingsUpdate):

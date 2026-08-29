@@ -20,5 +20,8 @@
     "fastapi"
   ],
   "author": "AeroCoders",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3"
+  }
 }

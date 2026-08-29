@@ -43,6 +43,7 @@ export interface AuthContextType {
   closeAuthModal: () => void;
   login: (credentials: { email?: string; phone?: string; password?: string }) => Promise<{ success: boolean; error?: string }>;
   signup: (details: AuthCredentials) => Promise<{ success: boolean; error?: string }>;
+  sendPhoneOtp: (phone: string) => Promise<{ success: boolean; error?: string }>;
   loginWithPhone: (phone: string, otp: string) => Promise<{ success: boolean; error?: string }>;
   loginWithDemo: (demoKey: "citizen" | "farmer" | "official" | "aviation") => Promise<void>;
   logout: () => void;

@@ -9,17 +9,19 @@ import {
   Bell,
   Bot,
 } from "lucide-react";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 export const BottomNav: React.FC = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const { t } = useLanguage();
 
   const navItems = [
-    { label: "Home", href: "/", icon: Home },
-    { label: "Radar", href: "/radar", icon: Radar },
-    { label: "AI Copilot", href: "/chat", icon: Bot, isCenter: true },
-    { label: "Forecast", href: "/forecast", icon: CalendarDays },
-    { label: "Alerts", href: "/notifications", icon: Bell },
+    { label: t("nav.home"), href: "/", icon: Home },
+    { label: t("nav.radar"), href: "/radar", icon: Radar },
+    { label: t("nav.ai_copilot"), href: "/chat", icon: Bot, isCenter: true },
+    { label: t("nav.forecast"), href: "/forecast", icon: CalendarDays },
+    { label: t("nav.alerts"), href: "/notifications", icon: Bell },
   ];
 
   return (
