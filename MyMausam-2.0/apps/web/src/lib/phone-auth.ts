@@ -1,16 +1,20 @@
 import { RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
-import { auth } from "./firebase-config";
+import { auth, isFirebaseConfigured } from "./firebase-config";
 
 let recaptchaVerifier: RecaptchaVerifier | null = null;
 let currentConfirmation: any = null;
 
 function getRecaptchaVerifier(): RecaptchaVerifier {
   if (recaptchaVerifier) return recaptchaVerifier;
-  recaptchaVerifier = new RecaptchaVerifier(auth, "recaptcha-container", { size: "invisible" });
+  recaptchaVerifier = new RecaptchaVerifier(auth!, "recaptcha-container", { size: "invisible" });
   return recaptchaVerifier;
 }
 
 export async function sendOtp(phoneNumber: string): Promise<{ success: boolean; error?: string }> {
+  if (!isFirebaseConfigured || !auth) {
+    return { success: false, error: "Firebase is not configured. Add your API key to .env.local" };
+  }
+
   const formatted = phoneNumber.startsWith("+")
     ? phoneNumber
     : `+91${phoneNumber.replace(/\D/g, "")}`;
