@@ -2,26 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { Header } from "@/components/Header";
+import { useWeather } from "@/context/WeatherContext";
 import {
-  Radio,
   Play,
   Pause,
   RefreshCw,
-  AlertTriangle,
+  MapPin,
 } from "lucide-react";
-import { WeatherAPI } from "@/lib/api";
-import { RadarData } from "@/types/weather";
-import { LoadingSkeleton, ErrorState, EmptyState } from "@/components/PageStates";
 
-interface StationDef {
-  key: string;
-  name: string;
-  lat: number;
-  lon: number;
-  state: string;
-}
-
-const STATIONS: StationDef[] = [
+const STATIONS = [
   { key: "Delhi", name: "Delhi (Palam DWR)", lat: 28.5665, lon: 77.1031, state: "Delhi NCR" },
   { key: "Jaipur", name: "Jaipur DWR", lat: 26.82, lon: 75.80, state: "Rajasthan" },
   { key: "Mumbai", name: "Mumbai (Colaba)", lat: 18.90, lon: 72.81, state: "Maharashtra" },
@@ -30,71 +19,21 @@ const STATIONS: StationDef[] = [
   { key: "Cherrapunji", name: "Cherrapunji DWR", lat: 25.29, lon: 91.73, state: "Meghalaya" },
 ];
 
-const FRAMES = [
-  "-60m",
-  "-45m",
-  "-30m",
-  "-15m",
-  "Live",
+const FRAMES = ["12PM", "1PM", "2PM", "3PM", "3:30–4:30PM", "5PM", "6PM"];
+
+const INTENSITY_COLORS = [
+  { label: "Light", color: "#4A90D9" },
+  { label: "Moderate", color: "#00DDE5" },
+  { label: "Heavy", color: "#FFBE00" },
+  { label: "Severe", color: "#FF2020" },
 ];
 
-/** Map reflectivity intensity to a color */
-function intensityColor(intensity: number): string {
-  if (intensity > 55) return "#ff2020"; // Red — severe
-  if (intensity > 40) return "#FFBE00"; // Yellow — heavy
-  if (intensity > 25) return "#8ED329"; // Green — moderate
-  if (intensity > 15) return "#00DDE5"; // Cyan — light
-  return "rgba(255,255,255,0.15)"; // Faint — clear
-}
-
-/** Map intensity to a blur amount */
-function intensityBlur(intensity: number): string {
-  if (intensity > 50) return "blur-sm";
-  if (intensity > 30) return "blur-md";
-  return "blur-lg";
-}
-
 export default function RadarPage() {
-  const [selectedStation, setSelectedStation] = useState<StationDef>(STATIONS[0]);
-  const [radarData, setRadarData] = useState<RadarData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { activeLocation } = useWeather();
+  const [selectedStation, setSelectedStation] = useState(STATIONS[0]);
   const [isPlaying, setIsPlaying] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState("");
-
-  const fetchRadar = useCallback(async (stationKey: string) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await WeatherAPI.getRadarData(stationKey);
-      setRadarData(data);
-      setLastUpdated(data.timestamp);
-    } catch (err: any) {
-      console.warn("Radar API failed:", err);
-      setError("Radar data unavailable. Using fallback.");
-      // Generate minimal fallback points around the station
-      const stn = STATIONS.find((s) => s.key === stationKey) || STATIONS[0];
-      setRadarData({
-        station: stn.name,
-        lat: stn.lat,
-        lon: stn.lon,
-        timestamp: new Date().toLocaleTimeString(),
-        range_km: 250,
-        reflectivity_points: [
-          { lat: stn.lat + 0.5, lon: stn.lon - 0.3, intensity: 30, level: "Moderate" },
-          { lat: stn.lat - 0.8, lon: stn.lon + 0.6, intensity: 45, level: "Heavy" },
-        ],
-        active_warnings: ["Radar data estimated — backend unavailable"],
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchRadar(selectedStation.key);
-  }, [selectedStation, fetchRadar]);
+  const [showStationPicker, setShowStationPicker] = useState(false);
 
   // Time-lapse animation
   useEffect(() => {
@@ -102,200 +41,195 @@ export default function RadarPage() {
     if (isPlaying) {
       interval = setInterval(() => {
         setFrameIndex((prev) => (prev + 1) % FRAMES.length);
-      }, 1200);
+      }, 2000);
     }
     return () => clearInterval(interval);
   }, [isPlaying]);
 
-  /** Convert lat/lon offset from station center to CSS position (percentage) */
-  const pointToPosition = (lat: number, lon: number): { top: string; left: string } => {
-    const stationLat = radarData?.lat ?? selectedStation.lat;
-    const stationLon = radarData?.lon ?? selectedStation.lon;
-    const rangeKm = radarData?.range_km ?? 250;
-    const latRange = rangeKm / 111; // ~111 km per degree
-    const lonRange = rangeKm / (111 * Math.cos((stationLat * Math.PI) / 180));
+  // Generate simulated radar blobs
+  const radarBlobs = React.useMemo(() => {
+    return Array.from({ length: 25 }, (_, i) => ({
+      x: 15 + Math.random() * 70,
+      y: 10 + Math.random() * 80,
+      size: 20 + Math.random() * 60,
+      intensity: Math.random(),
+      opacity: 0.3 + Math.random() * 0.5,
+    }));
+  }, []);
 
-    const latPct = ((stationLat - lat) / latRange) * 40 + 50; // 50% = center
-    const lonPct = ((lon - stationLon) / lonRange) * 40 + 50;
-
-    return { top: `${Math.max(5, Math.min(95, latPct))}%`, left: `${Math.max(5, Math.min(95, lonPct))}%` };
+  const getIntensityColor = (intensity: number) => {
+    if (intensity > 0.75) return "#FF2020";
+    if (intensity > 0.5) return "#FFBE00";
+    if (intensity > 0.25) return "#00DDE5";
+    return "#4A90D9";
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] pb-24 select-none">
-      <Header showBack={true} title="Doppler Radar & Satellite" subtitle="IMD DWR High-Resolution Reflectivity" />
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0d2847] to-[#061a2e] pb-24 select-none">
+      <Header showBack={true} title="Stormy Sunday" subtitle={`${activeLocation} • India`} />
 
-      <div className="p-4 space-y-4">
-        {/* Layer Selector Chips */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-          {[
-            { id: "reflectivity", label: "Doppler dBZ" },
-            { id: "satellite", label: "INSAT-3D Infrared" },
-            { id: "wind", label: "Wind Streamlines" },
-            { id: "lightning", label: "Lightning Density" },
-          ].map((layer) => (
-            <button
-              key={layer.id}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-bold shrink-0 transition-all ${
-                layer.id === "reflectivity"
-                  ? "bg-[#00DDE5] text-[#06345C] shadow-lg scale-105"
-                  : "glass-button text-white/80 hover:text-white"
-              }`}
-            >
-              {layer.label}
-            </button>
-          ))}
+      <div className="p-4 space-y-4 max-w-[480px] mx-auto">
+        {/* Station Selector */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setShowStationPicker(!showStationPicker)}
+            className="text-xs text-white/70 flex items-center gap-1.5 hover:text-white transition"
+          >
+            <MapPin className="w-3.5 h-3.5 text-[#FFBE00]" />
+            <span className="font-bold">{selectedStation.name}</span>
+          </button>
         </div>
 
-        {/* Radar Display */}
-        <div className="glass-card rounded-3xl p-4 border border-white/20 shadow-2xl space-y-3 relative overflow-hidden">
-          {/* Station Bar */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Radio className="w-4 h-4 text-[#00DDE5] animate-pulse" />
-              <h3 className="font-extrabold text-sm text-white">{selectedStation.name}</h3>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] bg-green-500/20 text-[#8ED329] font-bold px-2 py-0.5 rounded-full">
-                Live
-              </span>
+        {/* Station Picker Dropdown */}
+        {showStationPicker && (
+          <div className="rounded-2xl bg-white/10 border border-white/15 p-2 space-y-1 animate-fade-in">
+            {STATIONS.map((stn) => (
               <button
-                onClick={() => fetchRadar(selectedStation.key)}
-                className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white/70 transition"
-                title="Refresh radar data"
-              >
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Radar Display */}
-          <div className="relative w-full aspect-square rounded-2xl bg-[#031d36] border border-white/15 overflow-hidden flex items-center justify-center shadow-inner">
-            {/* Concentric range rings */}
-            <div className="absolute w-[80%] h-[80%] rounded-full border border-white/10 flex items-center justify-center">
-              <span className="absolute top-1 text-[8px] text-white/40">200 km</span>
-              <div className="w-[66%] h-[66%] rounded-full border border-white/10 flex items-center justify-center">
-                <span className="absolute top-1 text-[8px] text-white/40">100 km</span>
-                <div className="w-[50%] h-[50%] rounded-full border border-white/10 flex items-center justify-center">
-                  <span className="absolute top-1 text-[8px] text-white/40">50 km</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Crosshairs */}
-            <div className="absolute w-full h-[1px] bg-white/10" />
-            <div className="absolute h-full w-[1px] bg-white/10" />
-
-            {/* Radar sweep animation */}
-            <div className="absolute inset-0 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,transparent_300deg,rgba(0,221,229,0.35)_360deg)] animate-spin-slow origin-center pointer-events-none" />
-
-            {/* DYNAMIC weather echo clusters — rendered from API data */}
-            {radarData?.reflectivity_points.map((point, i) => {
-              const pos = pointToPosition(point.lat, point.lon);
-              const size = Math.max(24, Math.min(64, point.intensity * 1.1));
-              return (
-                <div
-                  key={i}
-                  className={`absolute rounded-full transition-all duration-700 ${intensityBlur(point.intensity)}`}
-                  style={{
-                    top: pos.top,
-                    left: pos.left,
-                    width: `${size}px`,
-                    height: `${size}px`,
-                    backgroundColor: intensityColor(point.intensity),
-                    opacity: 0.5 + (point.intensity / 100) * 0.4,
-                    transform: "translate(-50%, -50%)",
-                    animation: `pulse ${2 + (i % 3)}s ease-in-out infinite`,
-                  }}
-                  title={`${point.level} (${point.intensity} dBZ)`}
-                />
-              );
-            })}
-
-            {/* Center radar transmitter */}
-            <div className="w-3 h-3 rounded-full bg-[#00DDE5] ring-4 ring-[#00DDE5]/30 z-10" />
-
-            {/* Time badge */}
-            <div className="absolute top-3 left-3 bg-black/60 px-2.5 py-1 rounded-xl text-[10px] font-mono text-white border border-white/15">
-              {FRAMES[frameIndex]} ({lastUpdated || "loading..."})
-            </div>
-
-            <div className="absolute bottom-3 right-3 bg-black/60 px-2 py-0.5 rounded-lg text-[9px] font-mono text-white/70">
-              Range: {radarData?.range_km ?? 250} km
-            </div>
-
-            {/* Point count */}
-            <div className="absolute top-3 right-3 bg-black/60 px-2 py-0.5 rounded-lg text-[9px] font-mono text-white/70">
-              {radarData?.reflectivity_points.length ?? 0} echoes
-            </div>
-          </div>
-
-          {/* Playback controls */}
-          <div className="flex items-center justify-between gap-2 pt-1">
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="p-2.5 rounded-xl bg-white/15 hover:bg-white/25 active:scale-95 text-white transition flex items-center gap-1.5 text-xs font-bold"
-            >
-              {isPlaying ? <Pause className="w-4 h-4 text-[#FFBE00]" /> : <Play className="w-4 h-4 text-[#8ED329]" />}
-              <span>{isPlaying ? "Pause" : "Play Loop"}</span>
-            </button>
-            <div className="flex-1 flex gap-1">
-              {FRAMES.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => { setIsPlaying(false); setFrameIndex(i); }}
-                  className={`flex-1 h-2 rounded-full transition-all ${frameIndex === i ? "bg-[#00DDE5] scale-y-125" : "bg-white/20"}`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* dBZ Scale */}
-          <div className="space-y-1 pt-1">
-            <div className="flex justify-between text-[9px] text-white/60 font-bold">
-              <span>Light (15 dBZ)</span>
-              <span>Moderate (35 dBZ)</span>
-              <span>Severe / Hail (&gt; 55 dBZ)</span>
-            </div>
-            <div className="h-2 rounded-full bg-gradient-to-r from-[#00DDE5] via-[#8ED329] via-[#FFBE00] to-[#ff2020]" />
-          </div>
-
-          {/* Warnings */}
-          {radarData?.active_warnings && radarData.active_warnings.length > 0 && (
-            <div className="bg-[#FFBE00]/10 border border-[#FFBE00]/30 rounded-2xl p-3 space-y-1">
-              {radarData.active_warnings.map((warn, i) => (
-                <div key={i} className="flex items-start gap-2 text-[10px] text-[#FFBE00]">
-                  <AlertTriangle className="w-3 h-3 mt-0.5 shrink-0" />
-                  <span>{warn}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Station Switcher */}
-        <div className="space-y-2">
-          <span className="text-xs font-bold text-white/80 uppercase tracking-wider block px-1">
-            Select Radar Station
-          </span>
-          <div className="grid grid-cols-2 gap-2">
-            {STATIONS.map((station) => (
-              <button
-                key={station.key}
-                onClick={() => setSelectedStation(station)}
-                className={`p-3 rounded-2xl text-left border transition-all ${
-                  selectedStation.key === station.key
-                    ? "bg-white text-[#06345C] border-white shadow-xl scale-[1.02]"
-                    : "glass-card text-white hover:bg-white/15 border-white/15"
+                key={stn.key}
+                onClick={() => {
+                  setSelectedStation(stn);
+                  setShowStationPicker(false);
+                }}
+                className={`w-full text-left p-2.5 rounded-xl text-xs transition ${
+                  selectedStation.key === stn.key
+                    ? "bg-[#FFBE00]/20 text-[#FFBE00] font-bold"
+                    : "text-white/70 hover:bg-white/10"
                 }`}
               >
-                <span className="text-xs font-bold block leading-snug truncate">{station.name}</span>
-                <span className={`text-[10px] block mt-0.5 ${selectedStation.key === station.key ? "text-gray-600" : "text-white/60"}`}>
-                  {station.state}
-                </span>
+                <span className="block font-bold">{stn.name}</span>
+                <span className="text-[10px] text-white/50">{stn.state}</span>
               </button>
             ))}
           </div>
+        )}
+
+        {/* Radar Map Display */}
+        <div className="rounded-3xl border border-white/15 shadow-2xl bg-[#0a1628] overflow-hidden relative">
+          {/* Map Container */}
+          <div className="aspect-square relative overflow-hidden">
+            {/* Dark map background with grid */}
+            <div className="absolute inset-0 bg-[#0d1f35]">
+              {/* Grid lines */}
+              <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+                {/* Distance circles */}
+                <circle cx="50" cy="50" r="15" fill="none" stroke="rgba(0,221,229,0.2)" strokeWidth="0.3" strokeDasharray="2,2" />
+                <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(0,221,229,0.15)" strokeWidth="0.3" strokeDasharray="2,2" />
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(0,221,229,0.1)" strokeWidth="0.3" strokeDasharray="2,2" />
+                {/* Cross lines */}
+                <line x1="50" y1="5" x2="50" y2="95" stroke="rgba(0,221,229,0.08)" strokeWidth="0.2" />
+                <line x1="5" y1="50" x2="95" y2="50" stroke="rgba(0,221,229,0.08)" strokeWidth="0.2" />
+              </svg>
+
+              {/* Radar blobs */}
+              {radarBlobs.map((blob, i) => (
+                <div
+                  key={i}
+                  className="absolute rounded-full blur-md"
+                  style={{
+                    left: `${blob.x}%`,
+                    top: `${blob.y}%`,
+                    width: `${blob.size}px`,
+                    height: `${blob.size}px`,
+                    backgroundColor: getIntensityColor(blob.intensity),
+                    opacity: blob.opacity * (0.5 + (frameIndex / FRAMES.length) * 0.5),
+                    transform: `translate(-50%, -50%) scale(${0.8 + (frameIndex % 3) * 0.1})`,
+                    transition: "opacity 0.5s, transform 0.5s",
+                  }}
+                />
+              ))}
+
+              {/* Center marker */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
+                <div className="w-8 h-8 bg-[#0055A6] rounded-full flex items-center justify-center shadow-lg shadow-[#0055A6]/50 border-2 border-white/30">
+                  <MapPin className="w-4 h-4 text-white" />
+                </div>
+                <div className="text-center mt-1">
+                  <span className="text-[10px] font-bold text-white bg-[#0055A6]/80 px-2 py-0.5 rounded-full">
+                    {activeLocation} • Now
+                  </span>
+                </div>
+              </div>
+
+              {/* Distance labels */}
+              <span className="absolute text-[9px] text-white/40 font-bold" style={{ top: "35%", right: "22%" }}>10km</span>
+              <span className="absolute text-[9px] text-white/40 font-bold" style={{ top: "55%", right: "12%" }}>20km</span>
+              <span className="absolute text-[9px] text-white/40 font-bold" style={{ top: "65%", right: "5%" }}>30km</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rain Intensity Legend */}
+        <div>
+          <span className="text-xs font-bold text-white/70 block mb-2">Rain Intensity</span>
+          <div className="flex items-center gap-4">
+            {INTENSITY_COLORS.map((item) => (
+              <div key={item.label} className="flex items-center gap-1.5">
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-xs font-bold text-white/80">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Timeline Player */}
+        <div className="rounded-3xl p-4 border border-white/15 shadow-xl bg-white/8 backdrop-blur-xl">
+          <div className="flex items-center gap-4">
+            {/* Play/Pause Button */}
+            <button
+              onClick={() => setIsPlaying(!isPlaying)}
+              className="w-12 h-12 rounded-full bg-[#FFBE00] flex items-center justify-center shadow-lg shadow-[#FFBE00]/30 shrink-0 active:scale-95 transition"
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5 text-[#06345C]" />
+              ) : (
+                <Play className="w-5 h-5 text-[#06345C] ml-0.5" />
+              )}
+            </button>
+
+            <div className="flex-1">
+              {/* Time labels */}
+              <div className="flex justify-between mb-1.5">
+                <span className="text-[10px] text-white/50 font-bold">12PM</span>
+                <span className="text-[10px] text-white/50 font-bold">6PM</span>
+              </div>
+
+              {/* Timeline bar */}
+              <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
+                {/* Progress gradient */}
+                <div
+                  className="absolute inset-y-0 left-0 rounded-full"
+                  style={{
+                    width: `${((frameIndex + 1) / FRAMES.length) * 100}%`,
+                    background: "linear-gradient(90deg, #4A90D9, #00DDE5, #FFBE00, #FF2020)",
+                    transition: "width 0.3s",
+                  }}
+                />
+                {/* Current position indicator */}
+                <div
+                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-[#FFBE00] rounded-full border-2 border-white shadow-md z-10"
+                  style={{
+                    left: `calc(${((frameIndex + 0.5) / FRAMES.length) * 100}% - 8px)`,
+                    transition: "left 0.3s",
+                  }}
+                />
+              </div>
+
+              {/* Current time label */}
+              <div className="flex justify-center mt-2">
+                <span className="text-xs font-bold text-[#FFBE00] bg-[#FFBE00]/15 px-3 py-1 rounded-full">
+                  {FRAMES[frameIndex]}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          <p className="text-[11px] text-white/60 mt-3 text-center">
+            Heaviest rain expected 3:30–4:30PM • moving southeast →
+          </p>
         </div>
       </div>
     </div>

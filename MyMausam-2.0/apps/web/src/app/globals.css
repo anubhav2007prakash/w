@@ -16,7 +16,7 @@
 }
 
 body {
-  background: radial-gradient(circle at 50% 0%, #0d5ea6 0%, #032b50 70%, #021a32 100%);
+  background: radial-gradient(circle at 50% 0%, #0a1628 0%, #0d2847 50%, #061a2e 100%);
   color: #FFFFFF;
   font-family: var(--font-roboto), Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
   margin: 0;
@@ -146,4 +146,73 @@ body {
 
 .animate-slide-up {
   animation: slideUp 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+/* Rain overlay for auth screens */
+.rain-bg {
+  position: relative;
+  overflow: hidden;
+}
+.rain-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(ellipse at 50% 0%, rgba(0,85,166,0.6) 0%, transparent 60%),
+    radial-gradient(ellipse at 30% 80%, rgba(0,221,229,0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 60%, rgba(0,85,166,0.12) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Animated rain drops */
+@keyframes rainDrop {
+  0% { transform: translateY(-100vh) translateX(0); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { transform: translateY(100vh) translateX(-20px); opacity: 0; }
+}
+
+.rain-drop {
+  position: absolute;
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(180deg, transparent, rgba(0,221,229,0.3), transparent);
+  animation: rainDrop linear infinite;
+  pointer-events: none;
+}
+
+/* Severity border colors for alert cards */
+.alert-severity-severe {
+  border-left: 4px solid #FF2020;
+}
+.alert-severity-high {
+  border-left: 4px solid #FF6B35;
+}
+.alert-severity-moderate {
+  border-left: 4px solid #FFBE00;
+}
+.alert-severity-low {
+  border-left: 4px solid #00DDE5;
+}
+.alert-severity-info {
+  border-left: 4px solid #0055A6;
+}
+
+/* Horizontal scroll snap for forecast strips */
+.scroll-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+.scroll-snap-x > * {
+  scroll-snap-align: start;
+}
+
+/* Scale up animation for modals */
+@keyframes scaleUp {
+  from { transform: scale(0.9); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.animate-scale-up {
+  animation: scaleUp 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
 }

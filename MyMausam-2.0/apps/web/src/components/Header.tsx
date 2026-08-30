@@ -46,7 +46,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, title, subtitle }) => 
   // Render a placeholder on server / during hydration to avoid mismatch
   if (!mounted) {
     return (
-      <header className="px-4 pt-3 pb-2 flex items-center justify-between sticky top-0 z-30 bg-[#0055A6]/70 backdrop-blur-md border-b border-white/10 select-none">
+      <header className="px-4 pt-3 pb-2 flex items-center justify-between sticky top-0 z-30 bg-[#0a1628]/80 backdrop-blur-md border-b border-white/10 select-none">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-white/10 animate-pulse" />
           <div>
@@ -73,7 +73,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, title, subtitle }) => 
 
   if (showBack) {
     return (
-      <header className="px-4 py-3 bg-[#0055A6]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between border-b border-white/10 select-none">
+      <header className="px-4 py-3 bg-[#0a1628]/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between border-b border-white/10 select-none">
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.back()}
@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({ showBack, title, subtitle }) => 
   }
 
   return (
-    <header className="px-4 pt-3 pb-2 flex items-center justify-between sticky top-0 z-30 bg-[#0055A6]/70 backdrop-blur-md border-b border-white/10 select-none">
+    <header className="px-4 pt-3 pb-2 flex items-center justify-between sticky top-0 z-30 bg-[#0a1628]/80 backdrop-blur-md border-b border-white/10 select-none">
       {/* Left Menu & Location */}
       <div className="flex items-center gap-3">
         <button

@@ -26,7 +26,7 @@ export const BottomNav: React.FC = () => {
 
   return (
     <nav className="fixed bottom-3 left-1/2 -translate-x-1/2 z-40 w-[94%] max-w-[420px] select-none">
-      <div className="bg-[#052440] rounded-full px-3 py-1.5 flex items-center justify-around shadow-[0_12px_36px_rgba(0,0,0,0.8)] border border-white/20">
+      <div className="bg-[#0a1628]/90 backdrop-blur-xl rounded-full px-3 py-1.5 flex items-center justify-around shadow-[0_12px_36px_rgba(0,0,0,0.8)] border border-white/15">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
@@ -41,13 +41,13 @@ export const BottomNav: React.FC = () => {
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center shadow-2xl transition-all ${
                     isActive
-                      ? "bg-[#00DDE5] text-[#06345C] ring-4 ring-[#00DDE5]/30 scale-105"
-                      : "bg-gradient-to-tr from-[#0055A6] to-[#00DDE5] text-white hover:brightness-110"
+                      ? "bg-[#FFBE00] text-[#06345C] ring-4 ring-[#FFBE00]/30 scale-105"
+                      : "bg-gradient-to-tr from-[#FFBE00] to-[#e6ac00] text-[#06345C] hover:brightness-110"
                   }`}
                 >
                   <Bot className="w-6 h-6" />
                 </div>
-                <span className="text-[9px] font-bold text-white mt-0.5 tracking-tight">
+                <span className="text-[9px] font-bold text-[#FFBE00] mt-0.5 tracking-tight">
                   {item.label}
                 </span>
               </button>
@@ -60,8 +60,8 @@ export const BottomNav: React.FC = () => {
               onClick={() => router.push(item.href)}
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-2xl transition-all duration-200 ${
                 isActive
-                  ? "text-[#00DDE5] font-bold scale-110"
-                  : "text-white/60 hover:text-white"
+                  ? "text-[#FFBE00] font-bold scale-110"
+                  : "text-white/40 hover:text-white/70"
               }`}
             >
               <Icon className={`w-5 h-5 stroke-[2] ${isActive ? "drop-shadow-md" : ""}`} />

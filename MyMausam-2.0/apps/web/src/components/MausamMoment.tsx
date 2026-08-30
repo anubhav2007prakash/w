@@ -22,17 +22,17 @@ function modeToPersona(mode: string): Persona {
     case "fitness":
       return "fitness";
     case "commuter":
-      return "traveller";
+      return "commuter";
     case "travel":
-      return "traveller";
+      return "traveler";
     case "beach":
-      return "traveller";
+      return "beach";
     case "family":
-      return "general";
+      return "family";
     case "event_planner":
-      return "general";
+      return "event_planner";
     default:
-      return "general";
+      return "health";
   }
 }
 

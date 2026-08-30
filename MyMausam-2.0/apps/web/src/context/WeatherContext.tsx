@@ -14,6 +14,8 @@ interface WeatherContextType {
   activeDistrict: string;
   activeState: string;
   activeDate: string;
+  activeLat: number | null;
+  activeLon: number | null;
   currentWeather: CurrentWeather | null;
   isLoading: boolean;
   error: string | null;
@@ -52,6 +54,8 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
   const [activeDistrict, setActiveDistrict] = useState<string>("Ghaziabad");
   const [activeState, setActiveState] = useState<string>("Uttar Pradesh");
   const [activeDate, setActiveDate] = useState<string>("Thursday, 27 August");
+  const [activeLat, setActiveLat] = useState<number | null>(28.6692); // Default: Ghaziabad
+  const [activeLon, setActiveLon] = useState<number | null>(77.4538); // Default: Ghaziabad
   const [currentWeather, setCurrentWeather] = useState<CurrentWeather | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -152,6 +156,11 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
       if (savedPersona) setActivePersona(savedPersona);
       const savedViewMode = localStorage.getItem("mausam_view_mode") as "mobile" | "expanded";
       if (savedViewMode) setViewMode(savedViewMode);
+      // Restore saved coordinates
+      const savedLat = localStorage.getItem("mausam_active_lat");
+      const savedLon = localStorage.getItem("mausam_active_lon");
+      if (savedLat) setActiveLat(parseFloat(savedLat));
+      if (savedLon) setActiveLon(parseFloat(savedLon));
     }
   }, []);
 
@@ -162,8 +171,35 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
 
   const setLocation = (loc: string, lat?: number, lon?: number) => {
     setActiveLocation(loc);
-    fetchWeather(loc);
-    closeSearch();
+    if (lat != null && lon != null) {
+      setActiveLat(lat);
+      setActiveLon(lon);
+      if (typeof window !== "undefined") {
+        localStorage.setItem("mausam_active_lat", lat.toString());
+        localStorage.setItem("mausam_active_lon", lon.toString());
+      }
+      fetchWeather(loc);
+      closeSearch();
+    } else {
+      // Try to resolve coordinates from the location name via backend search
+      fetchWeather(loc);
+      closeSearch();
+      WeatherAPI.searchLocations(loc)
+        .then((results) => {
+          if (results && results.length > 0) {
+            const match = results.find((r: any) => r.name.toLowerCase() === loc.toLowerCase()) || results[0];
+            if (match.latitude && match.longitude) {
+              setActiveLat(match.latitude);
+              setActiveLon(match.longitude);
+              if (typeof window !== "undefined") {
+                localStorage.setItem("mausam_active_lat", match.latitude.toString());
+                localStorage.setItem("mausam_active_lon", match.longitude.toString());
+              }
+            }
+          }
+        })
+        .catch(() => {}); // Silently fail — coordinates are best-effort
+    }
   };
 
   const refreshWeather = async () => {
@@ -286,8 +322,8 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
         location_name: weather.location,
         district: weather.district,
         state: weather.state,
-        latitude: 28.6692,
-        longitude: 77.4538,
+        latitude: activeLat || 28.6692,
+        longitude: activeLon || 77.4538,
         current_temp: weather.temperature,
         min_temp: weather.minimum,
         max_temp: weather.maximum,
@@ -514,6 +550,8 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
         activeDistrict,
         activeState,
         activeDate,
+        activeLat,
+        activeLon,
         currentWeather,
         isLoading,
         error,

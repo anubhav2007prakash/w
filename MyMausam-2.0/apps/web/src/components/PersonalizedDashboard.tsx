@@ -1,38 +1,45 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useWeather } from "@/context/WeatherContext";
 import { usePersonalization } from "@/context/PersonalizationContext";
 import {
-  Sprout,
-  Activity,
   HeartPulse,
-  FlaskConical,
+  Activity,
+  Waves,
   Plane,
+  HeartHandshake,
+  Sprout,
+  Car,
+  CalendarCheck,
   CloudSun,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { getPersonalizedDashboard, PERSONA_CONFIG, Persona } from "@/lib/personalization-engine";
+import {
+  getPersonalizedDashboard,
+  PERSONA_CONFIG,
+  Persona,
+} from "@/lib/personalization-engine";
 
 /**
  * PersonalizedDashboard — Persona-specific weather cards.
  *
- * Shows a priority-ranked set of weather cards tailored to the user's
- * selected persona. Falls back to "general" persona by default.
- * Existing features (radar, alerts, forecast, AQI, etc.) remain untouched.
+ * Uses the priority engine to rank cards by persona relevance,
+ * urgency, time-of-day, and data availability.
  */
 
 const PERSONA_ICONS: Record<Persona, React.ElementType> = {
-  farmer: Sprout,
-  fitness: Activity,
   health: HeartPulse,
-  researcher: FlaskConical,
-  traveller: Plane,
-  general: CloudSun,
+  fitness: Activity,
+  beach: Waves,
+  traveler: Plane,
+  family: HeartHandshake,
+  farmer: Sprout,
+  commuter: Car,
+  event_planner: CalendarCheck,
 };
 
-/** Map PersonalizationContext's ActivityMode to our Persona type */
 function modeToPersona(mode: string): Persona {
   switch (mode) {
     case "agriculture":
@@ -41,17 +48,17 @@ function modeToPersona(mode: string): Persona {
     case "fitness":
       return "fitness";
     case "commuter":
-      return "traveller";
+      return "commuter";
     case "travel":
-      return "traveller";
+      return "traveler";
     case "beach":
-      return "traveller";
+      return "beach";
     case "family":
-      return "general";
+      return "family";
     case "event_planner":
-      return "general";
+      return "event_planner";
     default:
-      return "general";
+      return "health";
   }
 }
 
@@ -59,10 +66,15 @@ export function PersonalizedDashboard() {
   const { currentWeather } = useWeather();
   const { activeMode, setActiveMode } = usePersonalization();
   const [expanded, setExpanded] = useState(false);
+
   const persona = modeToPersona(activeMode);
-  const cards = getPersonalizedDashboard(persona, currentWeather);
-  const config = PERSONA_CONFIG[persona];
-  const Icon = PERSONA_ICONS[persona];
+  const config = PERSONA_CONFIG[persona] || PERSONA_CONFIG.health;
+  const Icon = PERSONA_ICONS[persona] || CloudSun;
+
+  const cards = useMemo(
+    () => getPersonalizedDashboard(persona, currentWeather, []),
+    [persona, currentWeather]
+  );
 
   // Show top 4 cards by default, all when expanded
   const displayCards = expanded ? cards : cards.slice(0, 4);
@@ -102,18 +114,20 @@ export function PersonalizedDashboard() {
         {(Object.keys(PERSONA_CONFIG) as Persona[]).map((p) => {
           const pc = PERSONA_CONFIG[p];
           const isActive = persona === p;
+          const PIcon = PERSONA_ICONS[p] || CloudSun;
           return (
             <button
               key={p}
               onClick={() => {
-                // Map our persona back to ActivityMode for the existing context
                 const modeMap: Record<Persona, string> = {
                   farmer: "agriculture",
                   fitness: "fitness",
                   health: "default",
-                  researcher: "default",
-                  traveller: "travel",
-                  general: "default",
+                  beach: "beach",
+                  traveler: "travel",
+                  family: "family",
+                  commuter: "commuter",
+                  event_planner: "event_planner",
                 };
                 setActiveMode(modeMap[p] as any);
               }}
@@ -124,7 +138,7 @@ export function PersonalizedDashboard() {
               }`}
               style={isActive ? { backgroundColor: pc.color } : undefined}
             >
-              <span>{pc.emoji}</span>
+              <PIcon className="w-3 h-3" />
               <span className="hidden sm:inline">{pc.label}</span>
             </button>
           );
@@ -138,13 +152,28 @@ export function PersonalizedDashboard() {
             key={card.id}
             className="bg-black/20 rounded-xl p-3 border border-white/5 flex flex-col justify-between"
           >
-            <span className="text-[10px] text-white/50 font-medium">{card.title}</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-white/50 font-medium">{card.title}</span>
+              {card.urgency > 60 && (
+                <span
+                  className="text-[8px] px-1 py-0.5 rounded font-bold"
+                  style={{ backgroundColor: "#ff202030", color: "#ff2020" }}
+                >
+                  URGENT
+                </span>
+              )}
+            </div>
             <div className="flex items-end justify-between mt-1">
               <span className="text-base font-bold" style={{ color: card.color }}>
                 {card.value}
               </span>
             </div>
             <span className="text-[10px] text-white/40 mt-0.5 leading-tight">{card.subtitle}</span>
+            {card.explanation && expanded && (
+              <span className="text-[9px] text-white/30 mt-1 italic leading-tight">
+                {card.explanation}
+              </span>
+            )}
           </div>
         ))}
       </div>

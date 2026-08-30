@@ -46,7 +46,7 @@ export const WeatherHero: React.FC<WeatherHeroProps> = ({ weather }) => {
 
   return (
     <section className="px-4 py-2 select-none">
-      <div className="glass-card rounded-3xl p-5 border border-white/20 shadow-2xl relative overflow-hidden space-y-4">
+      <div className="rounded-3xl p-5 border border-white/15 shadow-2xl relative overflow-hidden space-y-4 bg-white/8 backdrop-blur-xl">
         {/* Top Unit Converter & Audio trigger */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5 bg-black/20 px-3 py-1 rounded-full border border-white/10">

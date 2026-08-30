@@ -21,6 +21,15 @@ export interface SavedLocation {
   lon?: number;
 }
 
+export interface UserLocation {
+  name: string;
+  lat: number;
+  lon: number;
+  district?: string;
+  state?: string;
+  source: "gps" | "search" | "manual" | "default";
+}
+
 export interface UserInterests {
   weather_alerts: boolean;
   uv_index: boolean;
@@ -77,6 +86,10 @@ interface PersonalizationContextType {
   addSavedLocation: (loc: SavedLocation) => void;
   removeSavedLocation: (id: string) => void;
   primaryLocation: SavedLocation | null;
+
+  /** User's primary/home location with coordinates for geographic context */
+  userLocation: UserLocation | null;
+  setUserLocation: (loc: UserLocation) => void;
 
   accessibility: AccessibilitySettings;
   toggleAccessibility: (key: keyof AccessibilitySettings) => void;
@@ -153,6 +166,7 @@ export function PersonalizationProvider({ children }: { children: React.ReactNod
   const [activeMode, setActiveModeState] = useState<ActivityMode>("default");
   const [interests, setInterestsState] = useState<UserInterests>(DEFAULT_INTERESTS);
   const [savedLocations, setSavedLocationsState] = useState<SavedLocation[]>([]);
+  const [userLocation, setUserLocationState] = useState<UserLocation | null>(null);
   const [accessibility, setAccessibilityState] = useState<AccessibilitySettings>(DEFAULT_ACCESSIBILITY);
   const [notifications, setNotificationsState] = useState<NotificationPreferences>(DEFAULT_NOTIFICATIONS);
   const [feedback, setFeedbackState] = useState<RecommendationFeedback[]>([]);
@@ -164,6 +178,7 @@ export function PersonalizationProvider({ children }: { children: React.ReactNod
     setActiveModeState(loadState("mode", "default"));
     setInterestsState(loadState("interests", DEFAULT_INTERESTS));
     setSavedLocationsState(loadState("locations", []));
+    setUserLocationState(loadState("userLocation", null));
     setAccessibilityState(loadState("accessibility", DEFAULT_ACCESSIBILITY));
     setNotificationsState(loadState("notifications", DEFAULT_NOTIFICATIONS));
     setFeedbackState(loadState("feedback", []));
@@ -203,6 +218,11 @@ export function PersonalizationProvider({ children }: { children: React.ReactNod
   };
 
   const primaryLocation = savedLocations.find((l) => l.label === "home") || savedLocations[0] || null;
+
+  const setUserLocation = (loc: UserLocation) => {
+    setUserLocationState(loc);
+    saveState("userLocation", loc);
+  };
 
   const toggleAccessibility = (key: keyof AccessibilitySettings) => {
     setAccessibilityState((prev) => {
@@ -320,6 +340,8 @@ export function PersonalizationProvider({ children }: { children: React.ReactNod
         addSavedLocation,
         removeSavedLocation,
         primaryLocation,
+        userLocation,
+        setUserLocation,
         accessibility,
         toggleAccessibility,
         notifications,

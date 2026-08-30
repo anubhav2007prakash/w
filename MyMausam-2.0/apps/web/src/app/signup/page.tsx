@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "@/components/Header";
 import { useAuth } from "@/context/AuthContext";
@@ -28,8 +28,40 @@ import {
   Users,
   Camera,
   Smile,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import Link from "next/link";
+
+// Rain drops component for the background
+function RainOverlay() {
+  const [drops, setDrops] = useState<{ left: string; delay: string; duration: string }[]>([]);
+
+  useEffect(() => {
+    const generated = Array.from({ length: 40 }, (_, i) => ({
+      left: `${Math.random() * 100}%`,
+      delay: `${Math.random() * 5}s`,
+      duration: `${1.5 + Math.random() * 2}s`,
+    }));
+    setDrops(generated);
+  }, []);
+
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+      {drops.map((drop, i) => (
+        <div
+          key={i}
+          className="rain-drop"
+          style={{
+            left: drop.left,
+            animationDelay: drop.delay,
+            animationDuration: drop.duration,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -40,6 +72,9 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [city, setCity] = useState("Ghaziabad");
   const [selectedPersona, setSelectedPersona] = useState<PersonaType>("health");
   const [selectedAvatarId, setSelectedAvatarId] = useState<string>("health_guard");
@@ -53,42 +88,42 @@ export default function SignUpPage() {
     {
       id: "farmer",
       title: "Farmer / Kisan",
-      desc: "Rainfall probabilities, soil moisture, crop advisories",
+      desc: "Rainfall, soil moisture & crop advisories",
       icon: <Sprout className="w-5 h-5 text-green-400" />,
       defaultAvatar: "farmer_sun",
     },
     {
       id: "health",
       title: "Health & Allergy",
-      desc: "SAFAR AQI, dust warnings, UV index & pollen metrics",
+      desc: "AQI, dust warnings, UV & pollen",
       icon: <HeartPulse className="w-5 h-5 text-pink-400" />,
       defaultAvatar: "health_guard",
     },
     {
       id: "commuter",
       title: "Daily Commuter",
-      desc: "Live rain nowcasts, highway fog & road weather",
+      desc: "Rain nowcast, fog & road weather",
       icon: <Navigation className="w-5 h-5 text-blue-400" />,
       defaultAvatar: "commuter_metro",
     },
     {
       id: "runner",
       title: "Runner & Outdoor",
-      desc: "Thermal comfort index, wind resistance, golden hour",
+      desc: "Comfort index, wind, golden hour",
       icon: <Compass className="w-5 h-5 text-yellow-400" />,
       defaultAvatar: "runner_athlete",
     },
     {
       id: "beach",
       title: "Marine & Coastal",
-      desc: "INCOIS wave heights, ocean tides & sea surface temp",
+      desc: "Wave heights, tides & sea temp",
       icon: <Sun className="w-5 h-5 text-cyan-400" />,
       defaultAvatar: "ocean_sailor",
     },
     {
       id: "parent",
       title: "Family & Parent",
-      desc: "School morning weather, rain alerts & safe outdoor times",
+      desc: "School weather, rain alerts & safety",
       icon: <Users className="w-5 h-5 text-purple-400" />,
       defaultAvatar: "family_forecaster",
     },
@@ -107,6 +142,10 @@ export default function SignUpPage() {
 
     if (!name.trim()) {
       setError("Please enter your full name.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
     if (!agreeTerms) {
@@ -142,8 +181,8 @@ export default function SignUpPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] pb-24 select-none">
-      <Header showBack={true} title="Citizen Registration" subtitle="Create Your Profile & Avatar" />
+    <div className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0d2847] to-[#061a2e] pb-24 select-none relative">
+      <RainOverlay />
 
       {/* Avatar Picker Modal */}
       <AvatarPickerModal
@@ -157,35 +196,36 @@ export default function SignUpPage() {
         }}
       />
 
-      <div className="p-4 max-w-[440px] mx-auto space-y-4">
-        <form onSubmit={handleRegister} className="glass-card rounded-3xl p-5 border border-white/20 shadow-xl space-y-4">
-          {/* Header Card with interactive Avatar */}
-          <div className="flex items-center gap-3.5 pb-2 border-b border-white/10">
-            <div
-              onClick={() => setShowAvatarPicker(true)}
-              className="cursor-pointer group relative"
-              title="Click to choose avatar or upload photo"
-            >
-              <UserAvatar
-                avatarId={selectedAvatarId}
-                avatarUrl={selectedAvatarUrl}
-                name={name || "Citizen"}
-                size="xl"
-                showEditBadge={true}
-                className="group-hover:scale-105 transition"
-                ringColor="ring-[#00DDE5]"
-              />
+      <div className="relative z-10 p-4 max-w-[440px] mx-auto space-y-4 pt-6">
+        <form onSubmit={handleRegister} className="rounded-3xl p-6 border border-white/15 shadow-2xl space-y-5 bg-white/8 backdrop-blur-xl">
+          {/* Shield Logo & Title - matching Figma */}
+          <div className="text-center space-y-2 pb-2">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0055A6] to-[#00DDE5] flex items-center justify-center mx-auto shadow-lg shadow-[#0055A6]/30">
+              <ShieldCheck className="w-9 h-9 text-white" />
             </div>
             <div>
-              <h2 className="text-base font-black text-white">Join IMD Mausam 2.0</h2>
-              <button
-                type="button"
-                onClick={() => setShowAvatarPicker(true)}
-                className="text-[11px] font-bold text-[#00DDE5] hover:underline flex items-center gap-1 mt-0.5"
-              >
-                <Camera className="w-3 h-3" /> Pick Avatar / Upload Photo
-              </button>
+              <h2 className="text-xl font-black text-white leading-tight">IMD Citizen Weather Account</h2>
+              <p className="text-xs text-white/60 mt-1">Create your personalized account</p>
             </div>
+          </div>
+
+          {/* Tab Switcher - matching Figma */}
+          <div className="flex bg-white/8 p-1 rounded-2xl text-xs font-bold border border-white/10">
+            <Link
+              href="/login"
+              className="flex-1 py-2.5 rounded-xl transition text-white/50 hover:text-white text-center"
+            >
+              Sign In
+            </Link>
+            <span className="flex-1 py-2.5 rounded-xl transition bg-[#FFBE00] text-[#06345C] shadow-md text-center">
+              Register
+            </span>
+            <Link
+              href="/login"
+              className="flex-1 py-2.5 rounded-xl transition text-white/50 hover:text-white text-center"
+            >
+              OTP Login
+            </Link>
           </div>
 
           {error && (
@@ -195,192 +235,114 @@ export default function SignUpPage() {
             </div>
           )}
 
-          {/* Personal Info */}
-          <div className="space-y-2.5">
+          {/* Form Fields - matching Figma style with white inputs */}
+          <div className="space-y-3.5">
             <div>
-              <label className="text-[11px] font-bold text-white/80 block mb-1">Full Name *</label>
+              <label className="text-[12px] font-bold text-white/90 block mb-1.5">Full Name</label>
+              <input
+                type="text"
+                required
+                placeholder="Enter your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full bg-white/95 border-0 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFBE00]/50 transition"
+              />
+            </div>
+
+            <div>
+              <label className="text-[12px] font-bold text-white/90 block mb-1.5">Email or Mobile</label>
+              <input
+                type="text"
+                placeholder="Enter email or mobile number"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-white/95 border-0 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFBE00]/50 transition"
+              />
+            </div>
+
+            <div>
+              <label className="text-[12px] font-bold text-white/90 block mb-1.5">Password</label>
               <div className="relative">
-                <User className="w-4 h-4 text-white/40 absolute left-3 top-3" />
                 <input
-                  type="text"
-                  required
-                  placeholder="e.g. Ramesh Kumar"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white/10 border border-white/20 rounded-xl pl-9 pr-3 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5]"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-white/95 border-0 rounded-xl px-4 py-3 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFBE00]/50 transition"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[11px] font-bold text-white/80 block mb-1">Email</label>
-                <div className="relative">
-                  <Mail className="w-3.5 h-3.5 text-white/40 absolute left-3 top-2.5" />
-                  <input
-                    type="email"
-                    placeholder="user@gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl pl-8 pr-2 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-white/80 block mb-1">Mobile Number</label>
-                <div className="relative">
-                  <Phone className="w-3.5 h-3.5 text-white/40 absolute left-3 top-2.5" />
-                  <input
-                    type="tel"
-                    placeholder="+91 98765 43210"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl pl-8 pr-2 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5]"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-[11px] font-bold text-white/80 block mb-1">Password</label>
-                <div className="relative">
-                  <Lock className="w-3.5 h-3.5 text-white/40 absolute left-3 top-2.5" />
-                  <input
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl pl-8 pr-2 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-white/80 block mb-1">Home Station</label>
-                <div className="relative">
-                  <MapPin className="w-3.5 h-3.5 text-white/40 absolute left-3 top-2.5" />
-                  <input
-                    type="text"
-                    placeholder="Ghaziabad, Meerut..."
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full bg-white/10 border border-white/20 rounded-xl pl-8 pr-2 py-2 text-xs text-white placeholder:text-white/40 focus:outline-none focus:border-[#00DDE5]"
-                  />
-                </div>
+            <div>
+              <label className="text-[12px] font-bold text-white/90 block mb-1.5">Confirm Password</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-white/95 border-0 rounded-xl px-4 py-3 pr-10 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FFBE00]/50 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Quick Avatar Strip */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[11px] font-bold text-white/80 flex items-center gap-1">
-                <Smile className="w-3.5 h-3.5 text-[#FFBE00]" />
-                Select Avatar
-              </label>
-              <button
-                type="button"
-                onClick={() => setShowAvatarPicker(true)}
-                className="text-[10px] font-bold text-[#00DDE5] hover:underline"
-              >
-                View all ({AVATAR_PRESETS.length}) ›
-              </button>
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-              {AVATAR_PRESETS.slice(0, 6).map((preset) => {
-                const isSelected = selectedAvatarId === preset.id && !selectedAvatarUrl;
-                return (
-                  <button
-                    key={preset.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedAvatarId(preset.id);
-                      setSelectedAvatarUrl(undefined);
-                    }}
-                    className={`shrink-0 w-10 h-10 rounded-2xl bg-gradient-to-tr ${preset.bgGradient} flex items-center justify-center text-lg shadow-sm transition border ${
-                      isSelected
-                        ? "border-[#00DDE5] ring-2 ring-[#00DDE5] scale-110"
-                        : "border-white/20 hover:scale-105"
-                    }`}
-                    title={preset.name}
-                  >
-                    <span>{preset.emoji}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Persona Selection */}
-          <div>
-            <label className="text-[11px] font-bold text-white/90 block mb-2 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[#FFBE00]" />
-              Choose Your Primary Weather Persona
-            </label>
-            <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
-              {personas.map((p) => {
-                const isSelected = selectedPersona === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => handlePersonaSelect(p)}
-                    className={`w-full p-2.5 rounded-2xl border text-left transition flex items-center justify-between gap-3 ${
-                      isSelected
-                        ? "bg-white/20 border-[#00DDE5] shadow-md"
-                        : "bg-white/5 border-white/10 hover:bg-white/10"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="p-1.5 rounded-xl bg-white/10 shrink-0">{p.icon}</div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-white block truncate">{p.title}</span>
-                        <span className="text-[10px] text-white/60 block truncate">{p.desc}</span>
-                      </div>
-                    </div>
-                    {isSelected && <CheckCircle2 className="w-4 h-4 text-[#00DDE5] shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Terms Checkbox */}
+          {/* Terms */}
           <div className="flex items-start gap-2 pt-1">
             <input
               type="checkbox"
               id="terms"
               checked={agreeTerms}
               onChange={(e) => setAgreeTerms(e.target.checked)}
-              className="mt-0.5 rounded border-white/30 text-[#0055A6] focus:ring-0"
+              className="mt-0.5 rounded border-white/30 text-[#FFBE00] focus:ring-0"
             />
-            <label htmlFor="terms" className="text-[10px] text-white/70 leading-tight">
+            <label htmlFor="terms" className="text-[11px] text-white/60 leading-tight">
               I agree to receive localized weather & emergency hazard alerts from the India Meteorological Department.
             </label>
           </div>
 
-          {/* Submit Button */}
+          {/* Submit Button - matching Figma yellow style */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-2xl bg-gradient-to-r from-[#8ED329] to-[#00DDE5] hover:brightness-110 font-bold text-xs text-[#06345C] shadow-lg flex items-center justify-center gap-2 active:scale-98 transition disabled:opacity-50"
+            className="w-full py-3.5 rounded-2xl bg-[#FFBE00] hover:bg-[#e6ac00] font-bold text-sm text-[#06345C] shadow-lg shadow-[#FFBE00]/20 flex items-center justify-center gap-2 active:scale-[0.98] transition disabled:opacity-50"
           >
-            {loading ? "Creating Citizen Profile..." : "Complete Registration & Sign In"}
+            {loading ? "Creating Citizen Profile..." : "Register"}
             <ArrowRight className="w-4 h-4" />
           </button>
 
           {/* Existing account link */}
-          <div className="pt-2 text-center">
-            <p className="text-xs text-white/70">
-              Already registered?{" "}
-              <Link href="/login" className="text-[#00DDE5] font-bold hover:underline">
-                Sign In / Login
+          <div className="pt-1 text-center">
+            <p className="text-xs text-white/60">
+              Already have an account?{" "}
+              <Link href="/login" className="text-[#FFBE00] font-bold hover:underline">
+                Sign In
               </Link>
             </p>
           </div>
         </form>
+
+        {/* Security badge */}
+        <div className="text-center">
+          <p className="text-[10px] text-white/40 flex items-center justify-center gap-1">
+            <ShieldCheck className="w-3 h-3" />
+            Secured by IMD • Data encrypted
+          </p>
+        </div>
       </div>
     </div>
   );

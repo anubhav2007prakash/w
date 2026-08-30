@@ -164,7 +164,7 @@ export const LifestyleIndex: React.FC<LifestyleIndexProps> = ({ weather }) => {
 
   return (
     <section className="px-4 select-none">
-      <div className="glass-card rounded-3xl p-4 border border-white/20 shadow-xl space-y-3">
+      <div className="rounded-3xl p-4 border border-white/15 shadow-xl space-y-3 bg-white/8 backdrop-blur-xl">
         {/* Section Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

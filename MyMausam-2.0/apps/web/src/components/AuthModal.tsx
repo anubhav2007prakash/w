@@ -193,7 +193,7 @@ export const AuthModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm select-none">
-      <div className="bg-[#032442] border border-white/20 text-white w-full max-w-[420px] rounded-3xl p-5 shadow-2xl relative max-h-[92vh] overflow-y-auto animate-scale-up">
+      <div className="bg-[#0a1628]/95 backdrop-blur-xl border border-white/15 text-white w-full max-w-[420px] rounded-3xl p-5 shadow-2xl relative max-h-[92vh] overflow-y-auto animate-scale-up">
         {/* Close Button */}
         <button
           onClick={closeAuthModal}
@@ -217,7 +217,7 @@ export const AuthModal: React.FC = () => {
           <button
             onClick={() => { setTab("signin"); setError(null); }}
             className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
-              tab === "signin" ? "bg-[#0055A6] text-white shadow-md" : "text-white/70 hover:text-white"
+              tab === "signin" ? "bg-[#FFBE00] text-[#06345C] shadow-md" : "text-white/60 hover:text-white"
             }`}
           >
             <LogIn className="w-3.5 h-3.5" />
@@ -226,7 +226,7 @@ export const AuthModal: React.FC = () => {
           <button
             onClick={() => { setTab("signup"); setError(null); }}
             className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
-              tab === "signup" ? "bg-[#0055A6] text-white shadow-md" : "text-white/70 hover:text-white"
+              tab === "signup" ? "bg-[#FFBE00] text-[#06345C] shadow-md" : "text-white/60 hover:text-white"
             }`}
           >
             <UserPlus className="w-3.5 h-3.5" />
@@ -235,7 +235,7 @@ export const AuthModal: React.FC = () => {
           <button
             onClick={() => { setTab("otp"); setError(null); }}
             className={`flex-1 py-2 rounded-xl transition flex items-center justify-center gap-1.5 ${
-              tab === "otp" ? "bg-[#0055A6] text-white shadow-md" : "text-white/70 hover:text-white"
+              tab === "otp" ? "bg-[#FFBE00] text-[#06345C] shadow-md" : "text-white/60 hover:text-white"
             }`}
           >
             <Phone className="w-3.5 h-3.5" />

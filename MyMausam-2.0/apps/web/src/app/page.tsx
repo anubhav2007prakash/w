@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Header } from "@/components/Header";
 import { WeatherHero } from "@/components/WeatherHero";
 import { AQICard } from "@/components/AQICard";
@@ -23,9 +23,50 @@ import { PersonalizedDashboard } from "@/components/PersonalizedDashboard";
 import { WeatherAPI } from "@/lib/api";
 import { DailyForecastItem, WeatherAlert } from "@/types/weather";
 
+/**
+ * Error boundary for persona-specific sections.
+ * If a persona module crashes, the rest of the homepage continues working.
+ */
+class PersonaErrorBoundary extends React.Component<
+  { children: React.ReactNode; fallback?: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode; fallback?: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error) {
+    console.warn("Persona module error:", error.message);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback || null;
+    }
+    return this.props.children;
+  }
+}
+
+/**
+ * Homepage — Personalized Weather Intelligence Platform
+ *
+ * Section ordering is PERSONA-ADAPTIVE:
+ * - Severe weather alerts ALWAYS override normal personalization (top)
+ * - Persona engine (intelligence hub) moves up when persona is active
+ * - Persona-relevant sections appear earlier
+ * - Non-relevant sections appear later
+ * - All sections remain present (no removal)
+ *
+ * The user should feel the SAME homepage has become intelligent.
+ */
 export default function HomePage() {
   const { currentWeather, isLoading, error, refreshWeather, activeLocation } = useWeather();
-  const { hasCompletedOnboarding } = usePersonalization();
+  const { hasCompletedOnboarding, activeMode } = usePersonalization();
   const [dailyItems, setDailyItems] = useState<DailyForecastItem[]>([]);
   const [alerts, setAlerts] = useState<WeatherAlert[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -34,8 +75,8 @@ export default function HomePage() {
     async function loadForecastData() {
       try {
         const [daily, alertList] = await Promise.all([
-          WeatherAPI.getDailyForecast(),
-          WeatherAPI.getAlerts(),
+          WeatherAPI.getDailyForecast().catch(() => [] as DailyForecastItem[]),
+          WeatherAPI.getAlerts().catch(() => [] as WeatherAlert[]),
         ]);
         setDailyItems(daily);
         setAlerts(alertList);
@@ -49,8 +90,21 @@ export default function HomePage() {
     loadForecastData();
   }, [activeLocation]);
 
+  // Determine if severe weather is active (PDR §19: severe alerts override normal priority)
+  const hasSevereAlerts = alerts.some(
+    (a) =>
+      a.severity?.toLowerCase() === "severe" ||
+      a.severity?.toLowerCase() === "extreme" ||
+      a.alert_type?.toLowerCase().includes("severe") ||
+      a.alert_type?.toLowerCase().includes("cyclone") ||
+      a.alert_type?.toLowerCase().includes("warning")
+  );
+
+  // Check if any persona-specific mode is active (not "default")
+  const hasActivePersona = activeMode !== "default";
+
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] pb-24 flex flex-col justify-between">
+    <main className="min-h-screen bg-gradient-to-b from-[#0a1628] via-[#0d2847] to-[#061a2e] pb-24 flex flex-col justify-between">
       {!hasCompletedOnboarding && <OnboardingWizard />}
       <div>
         {/* Top App Header with GPS & Search */}
@@ -67,43 +121,67 @@ export default function HomePage() {
           </div>
         ) : currentWeather ? (
           <div className="space-y-1.5 animate-fade-in pt-1">
-            {/* Personalized Greeting + Data Indicators */}
+            {/* ═══ PRIORITY 1: SEVERE WEATHER ALERTS (PDR §19) ═══ */}
+            {/* Severe alerts ALWAYS override normal personalization — always on top */}
+            {hasSevereAlerts && alerts.length > 0 && (
+              <div className="mx-4 mt-2">
+                <WeatherAlertCard alert={alerts[0]} />
+              </div>
+            )}
+
+            {/* ═══ PRIORITY 2: PERSONA INTELLIGENCE ENGINE ═══ */}
+            {/* The core intelligence hub — always visible, shows persona-specific modules */}
+            <PersonaErrorBoundary>
+              <PersonaEngine />
+            </PersonaErrorBoundary>
+
+            {/* ═══ PRIORITY 3: PERSONALIZED GREETING ═══ */}
             <PersonalizedGreeting />
 
-            {/* Mausam Moment — Persona-aware weather insight */}
+            {/* ═══ PRIORITY 4: MAUSAM MOMENT ═══ */}
+            {/* Persona-aware micro-insight — adapts to selected persona */}
             <MausamMoment />
 
-            {/* Personalized Dashboard — Persona-specific cards */}
+            {/* ═══ PRIORITY 5: PERSONALIZED DASHBOARD ═══ */}
+            {/* Priority-ranked weather cards — reorder based on persona */}
             <PersonalizedDashboard />
 
-            {/* Current Weather Hero + 3D Wind Compass */}
+            {/* ═══ PRIORITY 6: CURRENT WEATHER HERO ═══ */}
+            {/* Current conditions + wind compass — always shown */}
             <WeatherHero weather={currentWeather} />
 
-            {/* Lifestyle Indices — Heatstroke, UV, AC Usage */}
+            {/* ═══ PRIORITY 7: LIFESTYLE INDICES ═══ */}
+            {/* Heatstroke, UV, AC usage — always shown */}
             <LifestyleIndex weather={currentWeather} />
 
-            {/* Smart Risk-Based Alerts */}
+            {/* ═══ PRIORITY 8: SMART ALERTS ═══ */}
+            {/* Weather alerts — always shown, severity-based */}
             <SmartAlerts />
 
-            {/* Today for You — Personalized Timeline */}
+            {/* ═══ PRIORITY 9: TODAY FOR YOU ═══ */}
+            {/* Personalized timeline — adapts to persona */}
             <TodayForYou />
 
-            {/* Personalized Weather Widgets (ranked by relevance) */}
+            {/* ═══ PRIORITY 10: PERSONALIZED WIDGETS ═══ */}
+            {/* Relevance-ranked weather detail widgets */}
             <PersonalizedWidgets />
 
-            {/* SIH 26076 AI Persona Engine (8 Personas with specialized telemetry widgets) */}
-            <PersonaEngine />
-
-            {/* Interactive AQI Status & Pollutant Breakdown */}
+            {/* ═══ PRIORITY 11: AQI DETAIL ═══ */}
+            {/* AQI breakdown — always shown */}
             <AQICard aqiData={currentWeather.aqi} />
 
-            {/* Quick Action Matrix */}
+            {/* ═══ PRIORITY 12: FEATURE BUTTONS ═══ */}
+            {/* Quick navigation — always shown */}
             <FeatureButtons />
 
-            {/* Weather Alert Emergency Card (if alerts active) */}
-            {alerts.length > 0 && <WeatherAlertCard alert={alerts[0]} />}
+            {/* ═══ PRIORITY 13: NON-SEVERE ALERTS ═══ */}
+            {/* Show non-severe alerts below the fold */}
+            {!hasSevereAlerts && alerts.length > 0 && (
+              <WeatherAlertCard alert={alerts[0]} />
+            )}
 
-            {/* Interactive Doppler Map Button & 7-Day Forecast */}
+            {/* ═══ PRIORITY 14: 7-DAY FORECAST ═══ */}
+            {/* Extended forecast — always shown */}
             <DailyForecastList forecasts={dailyItems} />
           </div>
         ) : null}

@@ -48,7 +48,7 @@ export const DailyForecastList: React.FC<DailyForecastListProps> = ({ forecasts 
       {/* Doppler Radar Quick Action Link */}
       <button
         onClick={() => router.push("/radar")}
-        className="w-full p-4 rounded-3xl bg-gradient-to-r from-[#0055A6] to-[#062b4c] border border-white/20 shadow-xl flex items-center justify-between hover:border-white/40 active:scale-[0.98] transition group"
+        className="w-full p-4 rounded-3xl bg-gradient-to-r from-[#0a1628] to-[#0d2847] border border-white/15 shadow-xl flex items-center justify-between hover:border-white/30 active:scale-[0.98] transition group"
       >
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[#00DDE5]/20 flex items-center justify-center text-[#00DDE5] shadow-inner group-hover:rotate-12 transition">
@@ -67,7 +67,7 @@ export const DailyForecastList: React.FC<DailyForecastListProps> = ({ forecasts 
       </button>
 
       {/* 7-Day Matrix Card */}
-      <div className="glass-card rounded-3xl p-4.5 border border-white/20 shadow-xl space-y-3">
+      <div className="rounded-3xl p-4.5 border border-white/15 shadow-xl space-y-3 bg-white/8 backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-[#00DDE5]" />

@@ -32,7 +32,7 @@ export const AQICard: React.FC<AQICardProps> = ({ aqiData }) => {
     <section className="px-4 py-1 select-none">
       <div
         onClick={() => router.push("/air-quality")}
-        className="glass-card rounded-3xl p-4.5 border border-white/20 shadow-xl space-y-3 cursor-pointer hover:border-white/40 transition-all"
+        className="rounded-3xl p-4.5 border border-white/15 shadow-xl space-y-3 cursor-pointer hover:border-white/30 transition-all bg-white/8 backdrop-blur-xl"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

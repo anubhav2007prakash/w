@@ -64,7 +64,7 @@ export default function RootLayout({
               <HtmlLangWrapper />
               <WeatherProvider>
               {/* Main App Container */}
-              <div className="relative z-10 w-full max-w-[480px] min-h-screen shadow-2xl bg-gradient-to-b from-[#0055A6] via-[#00488f] to-[#062b4c] flex flex-col">
+              <div className="relative z-10 w-full max-w-[480px] min-h-screen shadow-2xl bg-gradient-to-b from-[#0a1628] via-[#0d2847] to-[#061a2e] flex flex-col">
                 <ViewModeToggle />
                 <div className="flex-1 pb-16">{children}</div>
                 <BottomNav />
