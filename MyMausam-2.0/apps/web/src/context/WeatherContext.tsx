@@ -147,8 +147,6 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    fetchWeather(activeLocation);
-    fetchFavourites();
     if (typeof window !== "undefined") {
       const savedUnit = localStorage.getItem("mausam_temp_unit") as "C" | "F";
       if (savedUnit) setTempUnit(savedUnit);
@@ -161,6 +159,51 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
       const savedLon = localStorage.getItem("mausam_active_lon");
       if (savedLat) setActiveLat(parseFloat(savedLat));
       if (savedLon) setActiveLon(parseFloat(savedLon));
+
+      // Auto-detect location on first visit if no saved location exists
+      const hasSavedLocation = localStorage.getItem("mausam_weather_cache");
+      if (!hasSavedLocation && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (pos) => {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            setActiveLat(lat);
+            setActiveLon(lon);
+            localStorage.setItem("mausam_active_lat", lat.toString());
+            localStorage.setItem("mausam_active_lon", lon.toString());
+            // Reverse-geocode via search API or use coordinates directly
+            try {
+              const res = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+                { signal: AbortSignal.timeout(5000) }
+              );
+              if (res.ok) {
+                const data = await res.json();
+                const city =
+                  data.address?.city ||
+                  data.address?.town ||
+                  data.address?.village ||
+                  data.address?.county ||
+                  "Delhi";
+                setActiveLocation(city);
+                fetchWeather(city);
+              } else {
+                fetchWeather(activeLocation);
+              }
+            } catch {
+              fetchWeather(activeLocation);
+            }
+          },
+          () => {
+            // GPS denied or unavailable — fall back to default location
+            fetchWeather(activeLocation);
+          }
+        );
+      } else {
+        fetchWeather(activeLocation);
+      }
+
+      fetchFavourites();
     }
   }, []);
 
@@ -264,7 +307,32 @@ export function WeatherProvider({ children }: { children: React.ReactNode }) {
         try {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          setLocation(`Current GPS Location (${lat.toFixed(2)}, ${lon.toFixed(2)})`, lat, lon);
+          setActiveLat(lat);
+          setActiveLon(lon);
+          localStorage.setItem("mausam_active_lat", lat.toString());
+          localStorage.setItem("mausam_active_lon", lon.toString());
+
+          // Try to reverse-geocode the city name
+          let cityName = `Current GPS Location (${lat.toFixed(2)}, ${lon.toFixed(2)})`;
+          try {
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`,
+              { signal: AbortSignal.timeout(5000) }
+            );
+            if (res.ok) {
+              const data = await res.json();
+              cityName =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.village ||
+                data.address?.county ||
+                cityName;
+            }
+          } catch {
+            // If reverse geocoding fails, keep the coordinate-based name
+          }
+
+          setLocation(cityName, lat, lon);
         } catch (e) {
           console.error("GPS detection error:", e);
         } finally {
