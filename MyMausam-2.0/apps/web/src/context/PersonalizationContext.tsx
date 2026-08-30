@@ -147,14 +147,27 @@ function saveState(key: string, value: unknown) {
 const PersonalizationContext = createContext<PersonalizationContextType | undefined>(undefined);
 
 export function PersonalizationProvider({ children }: { children: React.ReactNode }) {
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(() => loadState("onboarding", false));
-  const [userName, setUserNameState] = useState(() => loadState("userName", ""));
-  const [activeMode, setActiveModeState] = useState<ActivityMode>(() => loadState("mode", "default"));
-  const [interests, setInterestsState] = useState<UserInterests>(() => loadState("interests", DEFAULT_INTERESTS));
-  const [savedLocations, setSavedLocationsState] = useState<SavedLocation[]>(() => loadState("locations", []));
-  const [accessibility, setAccessibilityState] = useState<AccessibilitySettings>(() => loadState("accessibility", DEFAULT_ACCESSIBILITY));
-  const [notifications, setNotificationsState] = useState<NotificationPreferences>(() => loadState("notifications", DEFAULT_NOTIFICATIONS));
-  const [feedback, setFeedbackState] = useState<RecommendationFeedback[]>(() => loadState("feedback", []));
+  // Initialize with server-safe defaults; localStorage is read after hydration
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const [userName, setUserNameState] = useState("");
+  const [activeMode, setActiveModeState] = useState<ActivityMode>("default");
+  const [interests, setInterestsState] = useState<UserInterests>(DEFAULT_INTERESTS);
+  const [savedLocations, setSavedLocationsState] = useState<SavedLocation[]>([]);
+  const [accessibility, setAccessibilityState] = useState<AccessibilitySettings>(DEFAULT_ACCESSIBILITY);
+  const [notifications, setNotificationsState] = useState<NotificationPreferences>(DEFAULT_NOTIFICATIONS);
+  const [feedback, setFeedbackState] = useState<RecommendationFeedback[]>([]);
+
+  // Hydrate from localStorage after mount to avoid SSR/client mismatch
+  useEffect(() => {
+    setHasCompletedOnboarding(loadState("onboarding", false));
+    setUserNameState(loadState("userName", ""));
+    setActiveModeState(loadState("mode", "default"));
+    setInterestsState(loadState("interests", DEFAULT_INTERESTS));
+    setSavedLocationsState(loadState("locations", []));
+    setAccessibilityState(loadState("accessibility", DEFAULT_ACCESSIBILITY));
+    setNotificationsState(loadState("notifications", DEFAULT_NOTIFICATIONS));
+    setFeedbackState(loadState("feedback", []));
+  }, []);
 
   const completeOnboarding = () => { setHasCompletedOnboarding(true); saveState("onboarding", true); };
   const resetOnboarding = () => { setHasCompletedOnboarding(false); saveState("onboarding", false); };
